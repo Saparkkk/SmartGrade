@@ -1,0 +1,225 @@
+<!doctype html>
+{% load static %}
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>สมัครสมาชิก | SmartGrade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
+
+  <!-- Header (เหมือนหน้า Login) -->
+  <header class="bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
+                    flex items-center justify-center text-white font-bold shadow">
+          SG
+        </div>
+        <div>
+          <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
+          <p class="text-xs text-gray-500">Student Behavior & Grade Management</p>
+        </div>
+      </div>
+
+      <span class="hidden md:flex text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+        สมัครสมาชิกนักเรียน
+      </span>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-center justify-center px-4 py-10">
+    <div class="w-full max-w-3xl grid gap-10 md:grid-cols-5">
+
+      <!-- Left small intro -->
+      <section class="hidden md:flex md:col-span-2 flex-col justify-center text-sm">
+        <h2 class="text-xl font-semibold text-gray-900 mb-2">
+          สร้างบัญชี SmartGrade
+        </h2>
+        <p class="text-gray-600 mb-4">
+          สมัครสมาชิกเพื่อให้คุณสามารถดูสถานะการเรียนของตัวเอง และติดตามคำแนะนำจากคุณครูได้สะดวกขึ้น
+        </p>
+        <ul class="space-y-2 text-gray-600">
+          <li class="flex gap-2">
+            <span class="mt-1 h-2 w-2 rounded-full bg-indigo-500"></span>
+            <span>ใช้บัญชีเดียวในการเข้าเรียนและดูข้อมูลพฤติกรรมตลอดทั้งภาคเรียน</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-1 h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span>ข้อมูลทั้งหมดถูกจัดเก็บอย่างเป็นระบบและปลอดภัย</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="mt-1 h-2 w-2 rounded-full bg-sky-500"></span>
+            <span>ออกแบบมาให้ใช้งานง่ายสำหรับทั้งนักเรียนและคุณครู</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Form card -->
+      <section class="md:col-span-3">
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8">
+
+          <h2 class="text-2xl font-semibold text-gray-900 text-center mb-6">
+            สมัครสมาชิก (นักเรียน)
+          </h2>
+
+          <form method="post" enctype="multipart/form-data" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Username -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">Username</label>
+              {% if form.username.errors %}
+                <p class="text-xs text-red-500">{{ form.username.errors }}</p>
+              {% endif %}
+              <input
+                type="text"
+                name="username"
+                value="{{ form.username.value|default:'' }}"
+                placeholder="เช่น s12345"
+                autocomplete="username"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+              <p class="text-[11px] text-gray-500">
+                Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+              </p>
+            </div>
+
+            <!-- Email -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">Email</label>
+              {% if form.email.errors %}
+                <p class="text-xs text-red-500">{{ form.email.errors }}</p>
+              {% endif %}
+              <input
+                type="email"
+                name="email"
+                value="{{ form.email.value|default:'' }}"
+                placeholder="เช่น student@example.com"
+                autocomplete="email"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+            </div>
+
+            <!-- First name -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">First name</label>
+              {% if form.first_name.errors %}
+                <p class="text-xs text-red-500">{{ form.first_name.errors }}</p>
+              {% endif %}
+              <input
+                type="text"
+                name="first_name"
+                value="{{ form.first_name.value|default:'' }}"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+            </div>
+
+            <!-- Last name -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">Last name</label>
+              {% if form.last_name.errors %}
+                <p class="text-xs text-red-500">{{ form.last_name.errors }}</p>
+              {% endif %}
+              <input
+                type="text"
+                name="last_name"
+                value="{{ form.last_name.value|default:'' }}"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+            </div>
+
+            <!-- Password -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">Password</label>
+              {% if form.password1.errors %}
+                <p class="text-xs text-red-500">{{ form.password1.errors }}</p>
+              {% endif %}
+              <input
+                type="password"
+                name="password1"
+                autocomplete="new-password"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+              <ul class="list-disc ml-5 mt-2 text-[11px] text-gray-500 space-y-0.5">
+                <li>Your password can’t be too similar to your other personal information.</li>
+                <li>Your password must contain at least 8 characters.</li>
+                <li>Your password can’t be a commonly used password.</li>
+                <li>Your password can’t be entirely numeric.</li>
+              </ul>
+            </div>
+
+            <!-- Password confirmation -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">Password confirmation</label>
+              {% if form.password2.errors %}
+                <p class="text-xs text-red-500">{{ form.password2.errors }}</p>
+              {% endif %}
+              <input
+                type="password"
+                name="password2"
+                autocomplete="new-password"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+            </div>
+
+            <!-- Class name -->
+            <div class="space-y-1">
+              <label class="block text-sm font-medium text-gray-700">Class name</label>
+              {% if form.class_name.errors %}
+                <p class="text-xs text-red-500">{{ form.class_name.errors }}</p>
+              {% endif %}
+              <input
+                type="text"
+                name="class_name"
+                value="{{ form.class_name.value|default:'' }}"
+                placeholder="เช่น ม.3/2"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-xl bg-white
+                       text-gray-800 text-sm shadow-sm
+                       focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+              >
+            </div>
+
+            <!-- Submit -->
+            <button
+              type="submit"
+              class="w-full mt-2 inline-flex items-center justify-center gap-2 
+                     rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500
+                     text-sm font-semibold text-white py-2.5 shadow-md
+                     hover:opacity-90 active:scale-95 transition">
+              สมัครสมาชิก
+            </button>
+
+          </form>
+
+          <p class="mt-6 text-center text-sm text-gray-600">
+            มีบัญชีแล้ว?
+            <a href="{% url 'login' %}" class="text-indigo-600 font-medium hover:underline">
+              เข้าสู่ระบบ
+            </a>
+          </p>
+
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+</body>
+</html>

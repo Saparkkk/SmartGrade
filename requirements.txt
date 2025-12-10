@@ -1,0 +1,4 @@
+Django-tailwind
+npm
+mysqlclient
+Pillow

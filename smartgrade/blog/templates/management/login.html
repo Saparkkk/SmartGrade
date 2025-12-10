@@ -1,0 +1,142 @@
+<!doctype html>
+{% load static %}
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>เข้าสู่ระบบ | SmartGrade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
+                    flex items-center justify-center text-white font-bold shadow">
+          SG
+        </div>
+        <div>
+          <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
+          <p class="text-xs text-gray-500">Student Behavior & Grade Management</p>
+        </div>
+      </div>
+
+      <span class="hidden md:flex text-xs px-3 py-1 rounded-full bg-gray-100 text-gray-600 border border-gray-200">
+        แพลตฟอร์มจัดการข้อมูลนักเรียนสำหรับคุณครู 🧑‍🏫
+      </span>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="flex-1 flex items-center justify-center px-4 py-10">
+
+    <div class="w-full max-w-6xl grid gap-12 md:grid-cols-2">
+
+      <!-- Left Content -->
+      <section class="hidden md:flex flex-col justify-center">
+        <div class="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 
+                    text-indigo-700 px-3 py-1 rounded-full text-xs font-medium mb-4">
+          <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+          พร้อมใช้งานแล้วสำหรับภาคเรียนนี้
+        </div>
+
+        <h1 class="text-4xl font-bold text-gray-900 leading-snug">
+          จัดการ <span class="text-indigo-600">ผลการเรียน</span> และ
+          <span class="text-sky-600">พฤติกรรม</span> ของนักเรียนอย่างมืออาชีพ
+        </h1>
+
+        <p class="mt-4 text-gray-600 leading-relaxed max-w-md">
+          SmartGrade สร้างขึ้นเพื่อช่วยคุณครูจัดการคะแนน การเข้าเรียน และพฤติกรรมของนักเรียน
+          ได้อย่างเป็นระบบ พร้อมแดชบอร์ดที่ใช้งานง่ายทุกอุปกรณ์
+        </p>
+
+        <div class="mt-6 grid gap-4 text-sm">
+          <div class="flex items-start gap-3">
+            <div class="h-7 w-7 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center font-semibold">1</div>
+            <p class="text-gray-700">บันทึกข้อมูลนักเรียนได้อย่างละเอียด</p>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="h-7 w-7 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center font-semibold">2</div>
+            <p class="text-gray-700">แดชบอร์ดสรุปภาพรวมที่ดูง่ายและชัดเจน</p>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <div class="h-7 w-7 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-semibold">3</div>
+            <p class="text-gray-700">ออกแบบให้ใช้งานง่ายสำหรับคุณครู</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Login Card -->
+      <section class="flex justify-center">
+        <div class="w-full max-w-md">
+
+          <div class="bg-white shadow-xl border border-gray-200 rounded-2xl p-8">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-1">เข้าสู่ระบบ</h2>
+            <p class="text-sm text-gray-500 mb-6">ลงชื่อเข้าใช้เพื่อเริ่มใช้งาน SmartGrade</p>
+
+            {% if messages %}
+              {% for m in messages %}
+                <div class="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+                  {{ m }}
+                </div>
+              {% endfor %}
+            {% endif %}
+
+            <form method="post" class="space-y-5">
+              {% csrf_token %}
+
+              <!-- Username -->
+              <div class="space-y-1">
+                <label class="text-sm font-medium text-gray-700">ชื่อผู้ใช้</label>
+                <input  
+                  name="username"
+                  placeholder="เช่น teacher01"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
+                         bg-white text-gray-800 shadow-sm 
+                         focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+                >
+              </div>
+
+              <!-- Password -->
+              <div class="space-y-1">
+                <label class="text-sm font-medium text-gray-700">รหัสผ่าน</label>
+                <input  
+                  name="password"
+                  type="password"
+                  placeholder="กรอกรหัสผ่าน"
+                  class="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
+                         bg-white text-gray-800 shadow-sm 
+                         focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
+                >
+              </div>
+
+              <button 
+                type="submit"
+                class="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500
+                       text-white font-semibold shadow-md hover:opacity-90 transition">
+                เข้าสู่ระบบ
+              </button>
+            </form>
+
+            <p class="text-center text-sm text-gray-600 mt-6">
+              ยังไม่มีบัญชี?
+              <a href="{% url 'register' %}" class="text-indigo-600 font-medium hover:underline">
+                สมัครสมาชิก
+              </a>
+            </p>
+
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+</body>
+</html>

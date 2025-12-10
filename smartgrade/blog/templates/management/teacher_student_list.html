@@ -1,0 +1,107 @@
+<!doctype html>
+{% load static %}
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>นักเรียนทั้งหมด | SmartGrade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
+
+  <!-- Top bar -->
+  <header class="bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
+                    flex items-center justify-center text-white font-bold shadow">
+          SG
+        </div>
+        <div>
+          <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
+          <p class="text-xs text-gray-500">Teacher Dashboard</p>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-3 text-xs">
+        <a href="{% url 'teacher_dashboard' %}" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">หน้าหลัก</a>
+        <a href="{% url 'teacher_student_list' %}" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">นักเรียนทั้งหมด</a>
+        <a href="{% url 'teacher_student_import' %}" class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">Import CSV</a>
+      </nav>
+
+      <a href="{% url 'logout' %}"
+         class="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-800 text-white text-[11px] hover:bg-rose-500 transition">
+        Logout
+      </a>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8">
+    <h1 class="text-xl font-semibold text-gray-900 mb-4">นักเรียนทั้งหมด</h1>
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-4 md:p-6">
+      <div class="overflow-x-auto -mx-2 md:mx-0">
+        <table class="min-w-full text-xs md:text-sm text-left text-gray-800">
+          <thead class="border-b border-gray-200 text-[11px] uppercase text-gray-500 bg-gray-50">
+          <tr>
+            <th class="px-3 py-2">ชื่อนักเรียน</th>
+            <th class="px-3 py-2">สถานะ</th>
+            <th class="px-3 py-2">คะแนนพฤติกรรมรวม</th>
+            <th class="px-3 py-2">ผลท้าย</th>
+          </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+          {% for row in student_rows %}
+            <tr class="hover:bg-gray-50 transition">
+              <td class="px-3 py-2">
+                <a href="{% url 'teacher_student_detail' row.profile.pk %}"
+                   class="text-indigo-600 hover:underline">
+                  {{ row.profile.user.get_full_name|default:row.profile.user.username }}
+                </a>
+              </td>
+              <td class="px-3 py-2">
+                {% if row.color == "green" %}
+                  <span class="inline-flex items-center gap-1 text-xs">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> ปลอดภัย
+                  </span>
+                {% elif row.color == "yellow" %}
+                  <span class="inline-flex items-center gap-1 text-xs">
+                    <span class="h-2 w-2 rounded-full bg-yellow-400"></span> เสี่ยงเล็กน้อย
+                  </span>
+                {% elif row.color == "red" %}
+                  <span class="inline-flex items-center gap-1 text-xs">
+                    <span class="h-2 w-2 rounded-full bg-red-500"></span> เสี่ยงสูง
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center gap-1 text-xs">
+                    <span class="h-2 w-2 rounded-full bg-gray-400"></span> ยังไม่มีข้อมูล
+                  </span>
+                {% endif %}
+              </td>
+              <td class="px-3 py-2">
+                {{ row.total_score }}/90
+              </td>
+              <td class="px-3 py-2 text-xs text-gray-700">
+                {{ row.summary }}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="4" class="px-3 py-4 text-center text-sm text-gray-500">
+                ยังไม่มีข้อมูลนักเรียน
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-4 text-xs text-gray-600">
+      <p class="mb-1 font-semibold">หมายเหตุสีจุดสถานะ:</p>
+      <p>🟢 ปลอดภัย / มีแนวโน้มผ่าน &nbsp;&nbsp; 🟡 เริ่มมีความเสี่ยง &nbsp;&nbsp; 🔴 ความเสี่ยงสูง / ควรได้รับความช่วยเหลือ</p>
+    </div>
+  </main>
+</body>
+</html>

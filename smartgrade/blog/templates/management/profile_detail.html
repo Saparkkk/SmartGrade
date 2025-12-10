@@ -1,0 +1,81 @@
+{% load static %}
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>ข้อมูลส่วนตัว | SmartGrade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-800">
+
+<header class="bg-white border-b border-gray-200 shadow-sm">
+  <div class="max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center text-white font-bold">
+        SG
+      </div>
+      <div>
+        <p class="text-lg font-semibold text-gray-800">SmartGrade</p>
+        <p class="text-xs text-gray-500">ข้อมูลส่วนตัว</p>
+      </div>
+    </div>
+
+    <a href="{% url 'dashboard' %}"
+       class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs hover:bg-slate-200">
+      กลับแดชบอร์ด
+    </a>
+  </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 md:px-0 py-8">
+  <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 md:p-8">
+
+    <div class="flex items-center gap-4 mb-6">
+      <div class="h-14 w-14 rounded-full bg-indigo-500 text-white flex items-center justify-center text-lg font-semibold">
+        {{ first_name|default:username|slice:":1"|upper }}
+      </div>
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800">
+          {{ first_name }} {{ last_name }}{% if not first_name and not last_name %}{{ username }}{% endif %}
+        </h2>
+        <p class="text-sm text-gray-500">
+          บทบาท:
+          {% if role == 'teacher' %}ครู{% else %}นักเรียน{% endif %}
+        </p>
+      </div>
+    </div>
+
+    <dl class="space-y-3 text-sm">
+      <div class="flex justify-between">
+        <dt class="text-gray-500">ชื่อผู้ใช้</dt>
+        <dd class="text-gray-800 font-medium">{{ username }}</dd>
+      </div>
+
+      <div class="flex justify-between">
+        <dt class="text-gray-500">อีเมล</dt>
+        <dd class="text-gray-800 font-medium">{{ email|default:"-" }}</dd>
+      </div>
+
+      {% if role == 'student' %}
+      <div class="flex justify-between">
+        <dt class="text-gray-500">ห้องเรียน</dt>
+        <dd class="text-gray-800 font-medium">{{ class_name|default:"-" }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+
+    <div class="mt-6">
+      <a href="{% url 'profile_edit' %}"
+         class="inline-flex items-center px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+        แก้ไขโปรไฟล์
+      </a>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

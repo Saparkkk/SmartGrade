@@ -1,0 +1,127 @@
+<!doctype html>
+{% load static %}
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>Teacher Dashboard | SmartGrade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
+
+  <!-- Top bar (match Login/Register) -->
+  <header class="bg-white/80 backdrop-blur border-b border-gray-200">
+    <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
+                    flex items-center justify-center text-white font-bold shadow">
+          SG
+        </div>
+        <div>
+          <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
+          <p class="text-xs text-gray-500">Teacher Dashboard</p>
+        </div>
+      </div>
+
+      <nav class="flex items-center gap-3 text-xs">
+        <a href="{% url 'teacher_dashboard' %}"
+          class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
+          หน้าหลัก
+        </a>
+        
+        <a href="{% url 'teacher_student_list' %}"
+          class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">
+          นักเรียนทั้งหมด
+        </a>
+
+        <a href="{% url 'teacher_student_import' %}"
+          class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100">
+          Import CSV
+        </a>
+      </nav>
+
+      <div class="flex items-center gap-3 text-xs text-gray-600">
+        <span class="px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+          คุณครู: {{ request.user.get_full_name|default:request.user.username }}
+        </span>
+        <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
+          class="h-9 w-9 rounded-full overflow-hidden border border-slate-200 flex items-center justify-center bg-indigo-500 text-white text-xs font-semibold shadow hover:opacity-90 transition">
+          {% if user_profile.profile_image %}
+            <img src="{{ user_profile.profile_image.url }}" alt="avatar"
+                class="h-full w-full object-cover">
+          {% else %}
+            {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+          {% endif %}
+        </a>
+        <a href="{% url 'logout' %}"
+           class="ml-2 inline-flex items-center px-3 py-1.5 rounded-full
+                  bg-rose-500 hover:bg-rose-600 text-white text-[11px] transition">
+          Logout
+        </a>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8 space-y-8">
+
+    <!-- Summary Section -->
+    <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-8">
+      <div class="flex items-center justify-between gap-6">
+        <div>
+          <h2 class="text-xl md:text-2xl font-semibold text-gray-900 mb-1">
+            ภาพรวมห้องเรียน
+          </h2>
+          <p class="text-sm text-gray-600">
+            จำนวนนักเรียนทั้งหมดในระบบของคุณ
+          </p>
+        </div>
+
+        <div class="text-right">
+          <p class="text-xs text-gray-500 mb-1">จำนวนนักเรียน</p>
+          <div class="text-4xl font-bold text-indigo-600">
+            {{ students.count }}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Risk Students Section -->
+    <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-7">
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">
+        นักเรียนที่ต้องติดตาม (กลุ่มเสี่ยง)
+      </h3>
+      <p class="text-xs text-gray-500 mb-4">
+        รายชื่อนักเรียนที่ระบบประเมินว่าอาจต้องให้ความดูแลเพิ่มเติม
+      </p>
+
+      {% if risk_students %}
+        <ul class="space-y-2 text-sm text-gray-800">
+          {% for s in risk_students %}
+            <li class="px-4 py-2 rounded-xl bg-red-50 border border-red-100
+                       flex items-center justify-between hover:bg-red-100/80 transition">
+              <div>
+                <span class="text-red-700 font-semibold">{{ s.user.get_full_name }}</span>
+                <span class="text-gray-500 text-xs"> ({{ s.user.username }})</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-full text-[11px]
+                           bg-white border border-red-200 text-red-600">
+                ห้อง {{ s.class_name }}
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="text-sm text-gray-600 bg-gray-50 rounded-xl p-4 border border-gray-200">
+          ไม่มีนักเรียนเสี่ยงในขณะนี้ 🎉
+        </div>
+      {% endif %}
+    </section>
+
+  </main>
+</body>
+</html>
