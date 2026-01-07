@@ -11,7 +11,6 @@
 
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-  <!-- Top bar (match Login/Register) -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
 
@@ -28,23 +27,23 @@
 
       <nav class="flex items-center gap-3 text-xs">
         <a href="{% url 'teacher_dashboard' %}"
-          class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100">
+          class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
           หน้าหลัก
         </a>
         
         <a href="{% url 'teacher_student_list' %}"
-          class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">
+          class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition">
           นักเรียนทั้งหมด
         </a>
 
         <a href="{% url 'teacher_student_import' %}"
-          class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100">
+          class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition">
           Import CSV
         </a>
       </nav>
 
       <div class="flex items-center gap-3 text-xs text-gray-600">
-        <span class="px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+        <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
           คุณครู: {{ request.user.get_full_name|default:request.user.username }}
         </span>
         <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
@@ -66,10 +65,8 @@
     </div>
   </header>
 
-  <!-- Main content -->
   <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8 space-y-8">
 
-    <!-- Summary Section -->
     <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-8">
       <div class="flex items-center justify-between gap-6">
         <div>
@@ -90,20 +87,20 @@
       </div>
     </section>
 
-    <!-- Risk Students Section -->
     <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-7">
       <h3 class="text-lg font-semibold text-gray-900 mb-2">
         นักเรียนที่ต้องติดตาม (กลุ่มเสี่ยง)
       </h3>
       <p class="text-xs text-gray-500 mb-4">
-        รายชื่อนักเรียนที่ระบบประเมินว่าอาจต้องให้ความดูแลเพิ่มเติม
+        รายชื่อนักเรียนที่ระบบประเมินว่าอาจต้องให้ความดูแลเพิ่มเติม (กดที่รายชื่อเพื่อดูรายงาน)
       </p>
 
       {% if risk_students %}
-        <ul class="space-y-2 text-sm text-gray-800">
+        <div class="space-y-2 text-sm text-gray-800">
           {% for s in risk_students %}
-            <li class="px-4 py-2 rounded-xl bg-red-50 border border-red-100
-                       flex items-center justify-between hover:bg-red-100/80 transition">
+            <a href="{% url 'student_report' s.user.username %}" 
+               class="block px-4 py-2 rounded-xl bg-red-50 border border-red-100
+                      flex items-center justify-between hover:bg-red-100 hover:shadow-sm transition cursor-pointer">
               <div>
                 <span class="text-red-700 font-semibold">{{ s.user.get_full_name }}</span>
                 <span class="text-gray-500 text-xs"> ({{ s.user.username }})</span>
@@ -112,9 +109,9 @@
                            bg-white border border-red-200 text-red-600">
                 ห้อง {{ s.class_name }}
               </span>
-            </li>
+            </a>
           {% endfor %}
-        </ul>
+        </div>
       {% else %}
         <div class="text-sm text-gray-600 bg-gray-50 rounded-xl p-4 border border-gray-200">
           ไม่มีนักเรียนเสี่ยงในขณะนี้ 🎉

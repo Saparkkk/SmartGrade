@@ -5,99 +5,240 @@
   <meta charset="utf-8">
   <title>รายละเอียดนักเรียน | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <style>
+    [x-cloak] { display: none !important; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-  <!-- Top bar -->
-  <header class="bg-white/80 backdrop-blur border-b border-gray-200">
-    <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
-                    flex items-center justify-center text-white font-bold shadow">
-          SG
+  <header class="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 flex items-center justify-center text-white font-bold shadow">SG</div>
+            <div>
+                <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
+                <p class="text-xs text-gray-500">Teacher Dashboard</p>
+            </div>
         </div>
-        <div>
-          <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
-          <p class="text-xs text-gray-500">Student Detail</p>
-        </div>
-      </div>
-
-      <nav class="flex items-center gap-3 text-xs">
-        <a href="{% url 'teacher_student_list' %}" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">
-          กลับไปหน้านักเรียนทั้งหมด
-        </a>
-      </nav>
+        <a href="{% url 'teacher_student_list' %}" class="text-sm text-gray-500 hover:text-indigo-600 transition">← กลับหน้ารายชื่อ</a>
     </div>
   </header>
 
-  <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8 space-y-6">
+  <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full" x-data="{ activeTab: 'behavior' }">
+    
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for message in messages %}
+        <div class="p-3 rounded-xl text-sm bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
 
-    <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6">
-      <h1 class="text-xl font-semibold text-gray-900 mb-2">
-        {{ profile.user.get_full_name|default:profile.user.username }}
-      </h1>
-      <p class="text-sm text-gray-600 mb-2">ห้องเรียน: {{ profile.class_name }}</p>
-
-      <div class="flex items-center gap-4 mt-4">
-        <div class="text-sm text-gray-700">
-          สถานะปัจจุบัน:
-          <strong>{{ status }}</strong>
+    {% if trend_alert %}
+    <div class="mb-6 p-4 rounded-xl border flex items-center gap-4 shadow-sm {{ trend_alert.css }}">
+        <div class="text-3xl bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
+            {{ trend_alert.icon }}
         </div>
-        {% if color == "green" %}
-          <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
-        {% elif color == "yellow" %}
-          <span class="h-3 w-3 rounded-full bg-yellow-400"></span>
-        {% elif color == "red" %}
-          <span class="h-3 w-3 rounded-full bg-red-500"></span>
-        {% else %}
-          <span class="h-3 w-3 rounded-full bg-gray-400"></span>
-        {% endif %}
-      </div>
+        <div>
+            <h3 class="font-bold text-lg">ตรวจจับแนวโน้ม (Trend Analysis)</h3>
+            <p class="text-sm font-medium opacity-90">{{ trend_alert.msg }}</p>
+        </div>
+    </div>
+    {% endif %}
 
-      <p class="mt-3 text-sm text-gray-700">
-        {{ summary }}
-      </p>
+    <section class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">{{ student.user.username }}</h1>
+            <p class="text-gray-500">ห้องเรียน: <span class="font-medium text-gray-700">{{ student.class_name }}</span></p>
+        </div>
+        <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+            <div class="text-right">
+                <p class="text-xs text-gray-500 uppercase font-semibold">สถานะความเสี่ยง</p>
+                {% if student.risk_status == "critical" %}
+                    <p class="text-red-600 font-bold">เสี่ยงสูง (Attendance &lt; 50%)</p>
+                {% elif student.risk_status == "warning" %}
+                    <p class="text-yellow-600 font-bold">เฝ้าระวัง</p>
+                {% else %}
+                    <p class="text-emerald-600 font-bold">ปกติ</p>
+                {% endif %}
+            </div>
+            <div class="h-3 w-3 rounded-full 
+                {% if student.risk_status == 'critical' %}bg-red-500 animate-pulse{% elif student.risk_status == 'warning' %}bg-yellow-400{% else %}bg-emerald-500{% endif %}">
+            </div>
+        </div>
     </section>
 
-    <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6">
-      <h2 class="text-sm md:text-base font-semibold text-gray-900 mb-4">
-        ประวัติพฤติกรรม
-      </h2>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
-      {% if behaviors %}
-        <div class="overflow-x-auto -mx-2 md:mx-0">
-          <table class="min-w-full text-xs md:text-sm text-left text-gray-800">
-            <thead class="border-b border-gray-200 text-[11px] uppercase text-gray-500 bg-gray-50">
-              <tr>
-                <th class="px-3 py-2">วันที่</th>
-                <th class="px-3 py-2">เข้าเรียน</th>
-                <th class="px-3 py-2">ส่งการบ้าน</th>
-                <th class="px-3 py-2">คะแนนแบบฝึกหัด</th>
-                <th class="px-3 py-2">คะแนนกิจกรรม</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-              {% for b in behaviors %}
-                <tr class="hover:bg-gray-50 transition">
-                  <td class="px-3 py-2">{{ b.record_date|date:"d/m/Y" }}</td>
-                  <td class="px-3 py-2">{{ b.attendance_score }}</td>
-                  <td class="px-3 py-2">
-                    {% if b.homework_done %}✔{% else %}✖{% endif %}
-                  </td>
-                  <td class="px-3 py-2">{{ b.quiz_score }}</td>
-                  <td class="px-3 py-2">{{ b.activity_score }}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-          </table>
+        <div class="lg:col-span-1 space-y-2 sticky top-24 h-fit">
+            <button @click="activeTab = 'behavior'" 
+                    :class="activeTab === 'behavior' ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200' : 'bg-white text-gray-600 hover:bg-gray-50 border border-transparent'"
+                    class="w-full text-left px-4 py-3 rounded-xl font-medium transition flex items-center gap-3">
+                <span>📊</span> พฤติกรรม / คะแนน
+            </button>
+            <button @click="activeTab = 'feedback'" 
+                    :class="activeTab === 'feedback' ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200' : 'bg-white text-gray-600 hover:bg-gray-50 border border-transparent'"
+                    class="w-full text-left px-4 py-3 rounded-xl font-medium transition flex items-center gap-3">
+                <span>💬</span> ส่ง Feedback
+            </button>
+            <button @click="activeTab = 'note'" 
+                    :class="activeTab === 'note' ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200' : 'bg-white text-gray-600 hover:bg-gray-50 border border-transparent'"
+                    class="w-full text-left px-4 py-3 rounded-xl font-medium transition flex items-center gap-3">
+                <span>🔒</span> บันทึกโน้ตส่วนตัว
+            </button>
+            <button @click="activeTab = 'contact'" 
+                    :class="activeTab === 'contact' ? 'bg-rose-600 text-white shadow-md ring-2 ring-rose-200' : 'bg-white text-gray-600 hover:bg-gray-50 border border-transparent'"
+                    class="w-full text-left px-4 py-3 rounded-xl font-medium transition flex items-center gap-3">
+                <span>📞</span> ติดต่อด่วน
+            </button>
         </div>
-      {% else %}
-        <p class="text-sm text-gray-600">ยังไม่มีข้อมูลพฤติกรรม</p>
-      {% endif %}
-    </section>
 
+        <div class="lg:col-span-3 space-y-6">
+
+            <div x-show="activeTab === 'behavior'" x-transition x-cloak class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4">บันทึกคะแนนประจำวัน</h2>
+                    <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_behavior">
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">วันที่</label> {{ behavior_form.record_date }}</div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">เข้าเรียน (%)</label> {{ behavior_form.attendance_score }}</div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">Quiz</label> {{ behavior_form.quiz_score }}</div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">กิจกรรม</label> {{ behavior_form.activity_score }}</div>
+                        <div class="md:col-span-2 flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
+                            {{ behavior_form.homework_done }} <span class="text-sm">ส่งการบ้านแล้ว</span>
+                        </div>
+                        <button type="submit" class="md:col-span-2 bg-gray-800 text-white py-2 rounded-xl font-semibold hover:bg-gray-900 transition">บันทึกคะแนน</button>
+                    </form>
+                </div>
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <table class="w-full text-sm text-left text-gray-600">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
+                            <tr><th class="px-6 py-3">วันที่</th><th class="px-6 py-3">เข้าเรียน</th><th class="px-6 py-3">งาน</th><th class="px-6 py-3">จัดการ</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for b in behaviors %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-3">{{ b.record_date|date:"d M Y" }}</td>
+                                <td class="px-6 py-3 font-medium {% if b.attendance_score < 50 %}text-red-600{% else %}text-emerald-600{% endif %}">{{ b.attendance_score }}%</td>
+                                <td class="px-6 py-3">{{ b.homework_done|yesno:"✔,✖" }}</td>
+                                <td class="px-6 py-3"><a href="{% url 'behavior_delete' b.id %}" onclick="return confirm('ลบ?')" class="text-gray-400 hover:text-red-500">&times;</a></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div x-show="activeTab === 'feedback'" x-transition x-cloak class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4">💬 ส่ง Feedback / ข้อความ</h2>
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_feedback">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label>
+                            {{ feedback_form.feedback_type }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">ข้อความ</label>
+                            {{ feedback_form.message }}
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl font-semibold shadow transition">บันทึก</button>
+                            <button type="reset" class="text-gray-500 hover:text-gray-700 px-4 py-2">ล้างข้อมูล</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="space-y-3">
+                    {% for f in feedbacks %}
+                    <div class="bg-white border border-gray-200 p-4 rounded-xl flex gap-3">
+                        <div class="h-10 w-10 rounded-full flex items-center justify-center shrink-0
+                            {% if f.feedback_type == 'praise' %}bg-emerald-100 text-emerald-600 text-xl{% elif f.feedback_type == 'warn' %}bg-red-100 text-red-600 text-xl{% else %}bg-gray-100 text-gray-600{% endif %}">
+                            {% if f.feedback_type == 'praise' %}👏{% elif f.feedback_type == 'warn' %}⚠️{% else %}💬{% endif %}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-semibold text-gray-900">{{ f.get_feedback_type_display }}</span>
+                                <span class="text-xs text-gray-400">{{ f.created_at|date:"d M Y H:i" }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">{{ f.message }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div x-show="activeTab === 'note'" x-transition x-cloak class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-20 h-20 bg-yellow-100 rounded-bl-full -mr-10 -mt-10"></div>
+                    <h2 class="text-lg font-bold text-gray-900 mb-4 relative z-10">🔒 บันทึกโน้ตส่วนตัว</h2>
+                    <form method="post" class="space-y-4 relative z-10">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_note">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">หัวข้อ</label> {{ note_form.title }}</div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label> {{ note_form.note_type }}</div>
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียด</label> {{ note_form.content }}</div>
+                        <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-xl font-semibold shadow transition">บันทึกโน้ต</button>
+                    </form>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for n in notes %}
+                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-bold text-yellow-900">{{ n.title }}</h3>
+                            <span class="text-[10px] bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">{{ n.note_type }}</span>
+                        </div>
+                        <p class="text-sm text-yellow-800 mb-3">{{ n.content }}</p>
+                        <p class="text-xs text-yellow-600 text-right">{{ n.created_at|date:"d M Y" }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div x-show="activeTab === 'contact'" x-transition x-cloak class="space-y-6">
+                <div class="bg-white border border-rose-100 rounded-2xl shadow-sm p-6 ring-1 ring-rose-50">
+                    <h2 class="text-lg font-bold text-rose-700 mb-4">📞 ติดต่อด่วน</h2>
+                    <form method="post" class="space-y-4">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_contact">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">ส่งถึง</label> {{ contact_form.target }}</div>
+                            <div><label class="block text-sm font-medium text-gray-700 mb-1">ช่องทาง</label> {{ contact_form.method }}</div>
+                        </div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">รายละเอียด</label> {{ contact_form.message }}</div>
+                        <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-xl font-semibold shadow transition w-full">ส่งข้อความ / บันทึกการติดต่อ</button>
+                    </form>
+                </div>
+                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                            <tr><th class="px-4 py-3">วันที่</th><th class="px-4 py-3">ถึง</th><th class="px-4 py-3">ช่องทาง</th><th class="px-4 py-3">รายละเอียด</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for c in contacts %}
+                            <tr>
+                                <td class="px-4 py-3 text-gray-500">{{ c.created_at|date:"d/m/Y H:i" }}</td>
+                                <td class="px-4 py-3 font-medium">{{ c.get_target_display }}</td>
+                                <td class="px-4 py-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs">{{ c.get_method_display }}</span></td>
+                                <td class="px-4 py-3 text-gray-600">{{ c.message }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="p-4 text-center text-gray-400">ยังไม่มีประวัติการติดต่อด่วน</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
   </main>
 </body>
 </html>

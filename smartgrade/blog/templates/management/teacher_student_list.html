@@ -10,9 +10,9 @@
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-  <!-- Top bar -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
                     flex items-center justify-center text-white font-bold shadow">
@@ -25,83 +25,170 @@
       </div>
 
       <nav class="flex items-center gap-3 text-xs">
-        <a href="{% url 'teacher_dashboard' %}" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">หน้าหลัก</a>
-        <a href="{% url 'teacher_student_list' %}" class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">นักเรียนทั้งหมด</a>
-        <a href="{% url 'teacher_student_import' %}" class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">Import CSV</a>
+        <a href="{% url 'teacher_dashboard' %}"
+          class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
+          หน้าหลัก
+        </a>
+        
+        <a href="{% url 'teacher_student_list' %}"
+          class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition">
+          นักเรียนทั้งหมด
+        </a>
+
+        <a href="{% url 'teacher_student_import' %}"
+          class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition">
+          Import CSV
+        </a>
+
+        <a href="{% url 'teacher_student_create' %}" 
+          class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
+          + เพิ่มนักเรียน
+        </a>
       </nav>
 
-      <a href="{% url 'logout' %}"
-         class="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-800 text-white text-[11px] hover:bg-rose-500 transition">
-        Logout
-      </a>
+      <div class="flex items-center gap-3 text-xs text-gray-600">
+        <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+          คุณครู: {{ request.user.get_full_name|default:request.user.username }}
+        </span>
+        <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
+          class="h-9 w-9 rounded-full overflow-hidden border border-slate-200 flex items-center justify-center bg-indigo-500 text-white text-xs font-semibold shadow hover:opacity-90 transition">
+          {% if user_profile.profile_image %}
+            <img src="{{ user_profile.profile_image.url }}" alt="avatar"
+                class="h-full w-full object-cover">
+          {% else %}
+            {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+          {% endif %}
+        </a>
+        <a href="{% url 'logout' %}"
+           class="ml-2 inline-flex items-center px-3 py-1.5 rounded-full
+                  bg-rose-500 hover:bg-rose-600 text-white text-[11px] transition">
+          Logout
+        </a>
+      </div>
+
     </div>
   </header>
 
   <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8">
-    <h1 class="text-xl font-semibold text-gray-900 mb-4">นักเรียนทั้งหมด</h1>
+    
+    <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
+      <h1 class="text-xl font-semibold text-gray-900">จัดการข้อมูลนักเรียน</h1>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 mb-6">
+      <form method="get" class="flex flex-col md:flex-row gap-3 items-center">
+        <div class="flex-1 w-full">
+            <input type="text" name="q" value="{{ search_query|default:'' }}" 
+                   placeholder="ค้นหาชื่อ หรือ Username..." 
+                   class="w-full text-sm border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
+        </div>
+        
+        <div class="w-full md:w-auto">
+            <select name="class_name" class="w-full text-sm border border-gray-300 rounded-xl px-4 py-2 outline-none bg-white">
+                <option value="">ทุกห้องเรียน</option>
+                {% for c in all_classes %}
+                <option value="{{ c }}" {% if class_filter == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="w-full md:w-auto px-6 py-2 rounded-xl bg-gray-800 text-white text-sm hover:bg-gray-900 transition shadow">
+            ค้นหา
+        </button>
+        {% if search_query or class_filter %}
+        <a href="{% url 'teacher_student_list' %}" class="text-xs text-gray-500 underline hover:text-gray-800">ล้างค่า</a>
+        {% endif %}
+      </form>
+    </div>
 
     <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-4 md:p-6">
-      <div class="overflow-x-auto -mx-2 md:mx-0">
-        <table class="min-w-full text-xs md:text-sm text-left text-gray-800">
-          <thead class="border-b border-gray-200 text-[11px] uppercase text-gray-500 bg-gray-50">
-          <tr>
-            <th class="px-3 py-2">ชื่อนักเรียน</th>
-            <th class="px-3 py-2">สถานะ</th>
-            <th class="px-3 py-2">คะแนนพฤติกรรมรวม</th>
-            <th class="px-3 py-2">ผลท้าย</th>
-          </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-100">
-          {% for row in student_rows %}
-            <tr class="hover:bg-gray-50 transition">
-              <td class="px-3 py-2">
-                <a href="{% url 'teacher_student_detail' row.profile.pk %}"
-                   class="text-indigo-600 hover:underline">
-                  {{ row.profile.user.get_full_name|default:row.profile.user.username }}
-                </a>
-              </td>
-              <td class="px-3 py-2">
-                {% if row.color == "green" %}
-                  <span class="inline-flex items-center gap-1 text-xs">
-                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span> ปลอดภัย
-                  </span>
-                {% elif row.color == "yellow" %}
-                  <span class="inline-flex items-center gap-1 text-xs">
-                    <span class="h-2 w-2 rounded-full bg-yellow-400"></span> เสี่ยงเล็กน้อย
-                  </span>
-                {% elif row.color == "red" %}
-                  <span class="inline-flex items-center gap-1 text-xs">
-                    <span class="h-2 w-2 rounded-full bg-red-500"></span> เสี่ยงสูง
-                  </span>
-                {% else %}
-                  <span class="inline-flex items-center gap-1 text-xs">
-                    <span class="h-2 w-2 rounded-full bg-gray-400"></span> ยังไม่มีข้อมูล
-                  </span>
-                {% endif %}
-              </td>
-              <td class="px-3 py-2">
-                {{ row.total_score }}/90
-              </td>
-              <td class="px-3 py-2 text-xs text-gray-700">
-                {{ row.summary }}
-              </td>
-            </tr>
-          {% empty %}
-            <tr>
-              <td colspan="4" class="px-3 py-4 text-center text-sm text-gray-500">
-                ยังไม่มีข้อมูลนักเรียน
-              </td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      
+      {% if messages %}
+        <div class="mb-4 space-y-2">
+        {% for message in messages %}
+          <div class="p-3 rounded-lg text-xs 
+            {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+            {% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
+            {% else %}bg-blue-50 text-blue-700 border border-blue-200{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+        </div>
+      {% endif %}
 
-    <div class="mt-4 text-xs text-gray-600">
-      <p class="mb-1 font-semibold">หมายเหตุสีจุดสถานะ:</p>
-      <p>🟢 ปลอดภัย / มีแนวโน้มผ่าน &nbsp;&nbsp; 🟡 เริ่มมีความเสี่ยง &nbsp;&nbsp; 🔴 ความเสี่ยงสูง / ควรได้รับความช่วยเหลือ</p>
-    </div>
+      <form method="POST" action="{% url 'teacher_student_bulk_delete' %}" id="bulkDeleteForm" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบนักเรียนที่เลือกทั้งหมด? ข้อมูลจะกู้คืนไม่ได้');">
+        {% csrf_token %}
+
+        <div class="mb-4 flex justify-end">
+            <button type="submit" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-4 py-2 rounded-lg transition font-semibold flex items-center gap-2">
+                <span>🗑️ ลบที่เลือก</span>
+            </button>
+        </div>
+
+        <div class="overflow-x-auto -mx-2 md:mx-0">
+          <table class="min-w-full text-xs md:text-sm text-left text-gray-800">
+            <thead class="border-b border-gray-200 text-[11px] uppercase text-gray-500 bg-gray-50">
+            <tr>
+              <th class="px-3 py-3 rounded-tl-lg w-10 text-center">
+                  <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+              </th>
+
+              <th class="px-3 py-3">ชื่อผู้ใช้ (รหัส)</th> <th class="px-3 py-3">ห้องเรียน</th>
+              <th class="px-3 py-3 text-center">สถานะความเสี่ยง</th>
+              <th class="px-3 py-3 text-right rounded-tr-lg">จัดการ</th>
+            </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+            {% for s in students %}
+              <tr class="hover:bg-gray-50 transition group">
+                
+                <td class="px-3 py-3 text-center">
+                    <input type="checkbox" name="student_ids" value="{{ s.id }}" class="student-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                </td>
+
+                <td class="px-3 py-3 font-medium text-indigo-900">
+                  {{ s.user.username }}
+                </td>
+                <td class="px-3 py-3 text-gray-600">
+                  {{ s.class_name }}
+                </td>
+                <td class="px-3 py-3 text-center">
+                  {% if s.risk_status == "normal" %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">ปลอดภัย</span>
+                  {% elif s.risk_status == "warning" %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">เฝ้าระวัง</span>
+                  {% elif s.risk_status == "critical" %}
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">เสี่ยงสูง</span>
+                  {% else %}
+                     <span class="text-gray-400 text-[10px]">-</span>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-3 text-right space-x-2">
+                   <a href="{% url 'teacher_student_detail' s.id %}" class="text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 px-2 py-1 rounded-md transition">ดูข้อมูล</a>
+                   <a href="{% url 'teacher_student_delete' s.id %}" onclick="return confirm('ยืนยันการลบนักเรียน {{ s.user.username }}?')" class="text-gray-400 hover:text-red-600 px-2 py-1 transition">ลบ</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="px-3 py-8 text-center text-sm text-gray-500">
+                  ไม่พบข้อมูลนักเรียน
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </form></div>
   </main>
+
+  <script>
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.student-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+    });
+  </script>
+
 </body>
 </html>

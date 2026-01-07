@@ -13,6 +13,7 @@
   <!-- Top bar -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
                     flex items-center justify-center text-white font-bold shadow">
@@ -20,14 +21,47 @@
         </div>
         <div>
           <p class="text-lg font-semibold text-gray-900">SmartGrade</p>
-          <p class="text-xs text-gray-500">Import CSV</p>
+          <p class="text-xs text-gray-500">Teacher Dashboard</p>
         </div>
       </div>
 
       <nav class="flex items-center gap-3 text-xs">
-        <a href="{% url 'teacher_dashboard' %}" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">หน้าหลัก</a>
-        <a href="{% url 'teacher_student_list' %}" class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200">นักเรียนทั้งหมด</a>
+        <a href="{% url 'teacher_dashboard' %}"
+          class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
+          หน้าหลัก
+        </a>
+        
+        <a href="{% url 'teacher_student_list' %}"
+          class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200 transition">
+          นักเรียนทั้งหมด
+        </a>
+
+        <a href="{% url 'teacher_student_import' %}"
+          class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100 transition">
+          Import CSV
+        </a>
       </nav>
+
+      <div class="flex items-center gap-3 text-xs text-gray-600">
+        <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
+          คุณครู: {{ request.user.get_full_name|default:request.user.username }}
+        </span>
+        <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
+          class="h-9 w-9 rounded-full overflow-hidden border border-slate-200 flex items-center justify-center bg-indigo-500 text-white text-xs font-semibold shadow hover:opacity-90 transition">
+          {% if user_profile.profile_image %}
+            <img src="{{ user_profile.profile_image.url }}" alt="avatar"
+                class="h-full w-full object-cover">
+          {% else %}
+            {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
+          {% endif %}
+        </a>
+        <a href="{% url 'logout' %}"
+           class="ml-2 inline-flex items-center px-3 py-1.5 rounded-full
+                  bg-rose-500 hover:bg-rose-600 text-white text-[11px] transition">
+          Logout
+        </a>
+      </div>
+
     </div>
   </header>
 
@@ -40,14 +74,15 @@
 
       {% if messages %}
         {% for m in messages %}
-          <div class="text-sm px-4 py-2 rounded-md
+          <div class="text-sm px-4 py-2 rounded-md mb-2
                       {% if m.tags == 'success' %}
                         bg-emerald-50 text-emerald-700 border border-emerald-200
+                      {% elif m.tags == 'warning' %}
+                        bg-yellow-50 text-yellow-700 border border-yellow-200
                       {% else %}
                         bg-red-50 text-red-700 border border-red-200
                       {% endif %}">
-            {{ m }}
-          </div>
+            {{ m|safe }}  </div>
         {% endfor %}
       {% endif %}
 

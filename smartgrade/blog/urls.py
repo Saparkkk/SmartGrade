@@ -27,13 +27,18 @@ urlpatterns = [
     path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
     
-    path('students/', views.list_students, name='list_students'),
-    path('students/create/', views.create_student, name='create_student'),
-    path('students/update/<int:student_id>/', views.update_student, name='update_student'),
-    path('students/delete/<int:student_id>/', views.delete_student, name='delete_student'),
+    path('students/', views.teacher_student_list, name='teacher_student_list'),
+    path('students/import/', views.student_import_csv_view, name='teacher_student_import'),
+    path('students/create/', views.teacher_student_create, name='teacher_student_create'),
+    path('student/report/<str:student_id>/', views.student_report, name='student_report'),
+    path('students/<int:student_id>/', views.teacher_student_detail, name='teacher_student_detail'),
+    path('students/<int:student_id>/delete/', views.teacher_student_delete, name='teacher_student_delete'),
+    path('behavior/<int:behavior_id>/delete/', views.behavior_delete, name='behavior_delete'),
     
     path('teacher/dashboard/', views.dashboard, name='teacher_dashboard'),
-    path('teacher/students/', views.student_list_view, name='teacher_student_list'),
-    path('teacher/students/<int:pk>/', views.student_detail_view, name='teacher_student_detail'),
-    path('teacher/students/import/', views.student_import_csv_view, name='teacher_student_import'),
+    path('students/<int:student_id>/edit/', views.teacher_student_edit, name='teacher_student_edit'),
+    path('students/bulk-delete/', views.teacher_student_bulk_delete, name='teacher_student_bulk_delete'),
+    
+    path('classroom/', views.classroom_mode, name='classroom_mode'),
+    path('classroom/log/<int:student_id>/<str:behavior_type>/', views.quick_behavior_log, name='quick_log'),
 ]

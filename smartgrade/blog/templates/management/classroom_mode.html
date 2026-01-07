@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>Classroom Action Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 pb-20">
+
+  <header class="bg-indigo-600 text-white p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
+    <div>
+        <h1 class="font-bold text-lg">🎮 Classroom Mode</h1>
+        <p class="text-xs opacity-80">แตะเพื่อบันทึกพฤติกรรมทันที</p>
+    </div>
+    <a href="{% url 'teacher_dashboard' %}" class="text-xs bg-white/20 px-3 py-1 rounded-full">ออก</a>
+  </header>
+
+  {% if messages %}
+    <div class="fixed top-16 left-0 right-0 px-4 z-40">
+        {% for message in messages %}
+        <div class="bg-gray-800 text-white text-sm p-3 rounded-xl shadow-lg mb-2 animate-bounce text-center">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+  {% endif %}
+
+  <main class="p-4 space-y-4">
+    {% for student in students %}
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-200">
+        <div class="flex justify-between items-center mb-3">
+            <div>
+                <h2 class="font-bold text-gray-800 text-lg">{{ student.user.get_full_name|default:student.user.username }}</h2>
+                <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">ห้อง {{ student.class_name }}</span>
+            </div>
+            <div class="h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 font-bold">
+                {{ student.user.username|slice:":1" }}
+            </div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-2">
+            <a href="{% url 'quick_log' student.id 'active' %}" 
+               class="flex flex-col items-center justify-center bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200 py-3 rounded-xl transition active:scale-95">
+                <span class="text-xl">🙋‍♂️</span>
+                <span class="text-[10px] font-bold mt-1">Active</span>
+            </a>
+
+            <a href="{% url 'quick_log' student.id 'late' %}" 
+               class="flex flex-col items-center justify-center bg-yellow-50 hover:bg-yellow-100 text-yellow-600 border border-yellow-200 py-3 rounded-xl transition active:scale-95">
+                <span class="text-xl">🏃</span>
+                <span class="text-[10px] font-bold mt-1">สาย</span>
+            </a>
+
+            <a href="{% url 'quick_log' student.id 'sleep' %}" 
+               class="flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-500 border border-gray-200 py-3 rounded-xl transition active:scale-95">
+                <span class="text-xl">😴</span>
+                <span class="text-[10px] font-bold mt-1">หลับ</span>
+            </a>
+
+            <a href="{% url 'quick_log' student.id 'phone' %}" 
+               class="flex flex-col items-center justify-center bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 py-3 rounded-xl transition active:scale-95">
+                <span class="text-xl">📱</span>
+                <span class="text-[10px] font-bold mt-1">เล่นมือถือ</span>
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+  </main>
+
+  <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="fixed bottom-6 right-6 bg-indigo-600 text-white h-12 w-12 rounded-full shadow-lg flex items-center justify-center text-xl z-30">
+    ⬆
+  </button>
+
+</body>
+</html>
