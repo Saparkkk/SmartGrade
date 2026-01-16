@@ -48,24 +48,99 @@
     </div>
     {% endif %}
 
-    <section class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">{{ student.user.username }}</h1>
-            <p class="text-gray-500">ห้องเรียน: <span class="font-medium text-gray-700">{{ student.class_name }}</span></p>
-        </div>
-        <div class="flex items-center gap-3 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
-            <div class="text-right">
-                <p class="text-xs text-gray-500 uppercase font-semibold">สถานะความเสี่ยง</p>
-                {% if student.risk_status == "critical" %}
-                    <p class="text-red-600 font-bold">เสี่ยงสูง (Attendance &lt; 50%)</p>
-                {% elif student.risk_status == "warning" %}
-                    <p class="text-yellow-600 font-bold">เฝ้าระวัง</p>
-                {% else %}
-                    <p class="text-emerald-600 font-bold">ปกติ</p>
+    <section class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-6 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 z-0"></div>
+
+        <div class="flex flex-col md:flex-row gap-6 items-start relative z-10">
+            
+            <div class="shrink-0 mx-auto md:mx-0">
+                <div class="h-24 w-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden ring-1 ring-gray-100">
+                    {% if student.profile_image %}
+                        <img src="{{ student.profile_image.url }}" alt="Profile" class="h-full w-full object-cover">
+                    {% else %}
+                        <img src="https://ui-avatars.com/api/?name={{ student.user.username }}&background=6366f1&color=fff&size=128" 
+                            alt="Profile" class="h-full w-full object-cover">
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="flex-1 w-full text-center md:text-left space-y-3">
+                
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900 leading-tight">
+                        {{ student.user.first_name }} {{ student.user.last_name }}
+                        {% if student.nickname %}
+                            <span class="text-xl text-gray-500 font-normal ml-2">({{ student.nickname }})</span>
+                        {% endif %}
+                    </h1>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                        <p class="text-sm text-gray-500">
+                            Username: {{ student.user.username }} 
+                        </p>
+                        <span class="mx-2 text-gray-300">|</span> 
+                        <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">{{ student.class_name|default:"ไม่ระบุห้อง" }}</span>
+                        
+                        {% if student.phone %}
+                        <span class="mx-2 text-gray-300">|</span>
+                        <div class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                            </svg>
+                            <a href="tel:{{ student.phone }}" class="hover:underline">{{ student.phone }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-gray-600 pt-2 border-t border-gray-100">
+                    {% if student.phone %}
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                        <span>{{ student.phone }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if student.line_id %}
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .5C5.4.5 0 4.8 0 10.2c0 2.9 1.5 5.5 3.9 7.4-.2.8-1 2.8-1.2 3.4 0 0-.2.4.2.5.3.2 2.6-1.5 4.3-2.4 1.6.4 3.2.7 4.8.7 6.6 0 12-4.3 12-9.7S16.6.5 12 .5z"/></svg>
+                        <span>Line: {{ student.line_id }}</span>
+                    </div>
+                    {% endif %}
+
+                    {% if student.user.email %}
+                    <div class="flex items-center gap-2">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <span>{{ student.user.email }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if student.bio %}
+                <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 italic border border-gray-100 mt-2">
+                    "{{ student.bio }}"
+                </div>
                 {% endif %}
             </div>
-            <div class="h-3 w-3 rounded-full 
-                {% if student.risk_status == 'critical' %}bg-red-500 animate-pulse{% elif student.risk_status == 'warning' %}bg-yellow-400{% else %}bg-emerald-500{% endif %}">
+
+            <div class="w-full md:w-auto flex flex-col items-center md:items-end gap-2 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100">
+                <div class="flex items-center gap-2 bg-white pl-4 pr-2 py-2 rounded-xl border border-gray-200 shadow-sm">
+                    <div class="text-right">
+                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">สถานะ</p>
+                        {% if student.risk_status == "critical" %}
+                            <p class="text-red-600 font-bold leading-none">เสี่ยงสูง</p>
+                        {% elif student.risk_status == "warning" %}
+                            <p class="text-yellow-600 font-bold leading-none">เฝ้าระวัง</p>
+                        {% else %}
+                            <p class="text-emerald-600 font-bold leading-none">ปกติ</p>
+                        {% endif %}
+                    </div>
+                    <div class="h-8 w-8 rounded-full flex items-center justify-center
+                        {% if student.risk_status == 'critical' %}bg-red-100 text-red-500{% elif student.risk_status == 'warning' %}bg-yellow-100 text-yellow-500{% else %}bg-emerald-100 text-emerald-500{% endif %}">
+                        <div class="h-3 w-3 rounded-full 
+                            {% if student.risk_status == 'critical' %}bg-red-500 animate-ping{% elif student.risk_status == 'warning' %}bg-yellow-500{% else %}bg-emerald-500{% endif %}">
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
@@ -104,7 +179,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="add_behavior">
                         <div><label class="text-xs font-bold text-gray-500 uppercase">วันที่</label> {{ behavior_form.record_date }}</div>
-                        <div><label class="text-xs font-bold text-gray-500 uppercase">เข้าเรียน (%)</label> {{ behavior_form.attendance_score }}</div>
+                        <div><label class="text-xs font-bold text-gray-500 uppercase">สถานะการมาเรียน</label> {{ behavior_form.attendance_score }}</div>
                         <div><label class="text-xs font-bold text-gray-500 uppercase">Quiz</label> {{ behavior_form.quiz_score }}</div>
                         <div><label class="text-xs font-bold text-gray-500 uppercase">กิจกรรม</label> {{ behavior_form.activity_score }}</div>
                         <div class="md:col-span-2 flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
@@ -124,7 +199,19 @@
                                 <td class="px-6 py-3">{{ b.record_date|date:"d M Y" }}</td>
                                 <td class="px-6 py-3 font-medium {% if b.attendance_score < 50 %}text-red-600{% else %}text-emerald-600{% endif %}">{{ b.attendance_score }}%</td>
                                 <td class="px-6 py-3">{{ b.homework_done|yesno:"✔,✖" }}</td>
-                                <td class="px-6 py-3"><a href="{% url 'behavior_delete' b.id %}" onclick="return confirm('ลบ?')" class="text-gray-400 hover:text-red-500">&times;</a></td>
+                                <td class="px-6 py-3 text-center">
+                                    <form method="POST" onsubmit="return confirm('ยืนยันที่จะลบรายการนี้?');" class="inline-block">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="delete_behavior">
+                                        <input type="hidden" name="record_id" value="{{ b.id }}">
+                                        
+                                        <button type="submit" class="text-gray-400 hover:text-red-600 transition p-1 rounded-md hover:bg-red-50" title="ลบรายการ">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>

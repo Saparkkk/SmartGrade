@@ -29,16 +29,20 @@ urlpatterns = [
     
     path('students/', views.teacher_student_list, name='teacher_student_list'),
     path('students/import/', views.student_import_csv_view, name='teacher_student_import'),
-    path('students/create/', views.teacher_student_create, name='teacher_student_create'),
     path('student/report/<str:student_id>/', views.student_report, name='student_report'),
+    path('student/subject/<str:subject_name>/', views.student_subject_detail, name='student_subject_detail'),
     path('students/<int:student_id>/', views.teacher_student_detail, name='teacher_student_detail'),
     path('students/<int:student_id>/delete/', views.teacher_student_delete, name='teacher_student_delete'),
     path('behavior/<int:behavior_id>/delete/', views.behavior_delete, name='behavior_delete'),
     
+    path('teacher/add-student-manual/', views.teacher_add_student_manual, name='teacher_add_student_manual'),
     path('teacher/dashboard/', views.dashboard, name='teacher_dashboard'),
     path('students/<int:student_id>/edit/', views.teacher_student_edit, name='teacher_student_edit'),
-    path('students/bulk-delete/', views.teacher_student_bulk_delete, name='teacher_student_bulk_delete'),
-    
+    path('students/<int:student_id>/remove/', views.teacher_student_remove, name='teacher_student_remove'),
+    path('students/bulk-remove/', views.teacher_student_bulk_remove, name='teacher_student_bulk_remove'),
+
+    path('students/import/', views.student_import_csv_view, name='teacher_student_import'),
     path('classroom/', views.classroom_mode, name='classroom_mode'),
     path('classroom/log/<int:student_id>/<str:behavior_type>/', views.quick_behavior_log, name='quick_log'),
 ]
+

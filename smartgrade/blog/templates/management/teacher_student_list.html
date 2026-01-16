@@ -40,7 +40,7 @@
           Import CSV
         </a>
 
-        <a href="{% url 'teacher_student_create' %}" 
+        <a href="{% url 'teacher_add_student_manual' %}" 
           class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
           + เพิ่มนักเรียน
         </a>
@@ -50,11 +50,14 @@
         <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
           คุณครู: {{ request.user.get_full_name|default:request.user.username }}
         </span>
-        <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
-          class="h-9 w-9 rounded-full overflow-hidden border border-slate-200 flex items-center justify-center bg-indigo-500 text-white text-xs font-semibold shadow hover:opacity-90 transition">
+       <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
+           class="h-9 w-9 rounded-full overflow-hidden border border-slate-200
+                  flex items-center justify-center bg-indigo-500 text-white
+                  text-xs font-semibold shadow hover:opacity-90 transition">
           {% if user_profile.profile_image %}
-            <img src="{{ user_profile.profile_image.url }}" alt="avatar"
-                class="h-full w-full object-cover">
+            <img src="{{ user_profile.profile_image.url }}"
+                  alt="avatar"
+                 class="h-full w-full object-cover">
           {% else %}
             {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
           {% endif %}
@@ -116,12 +119,13 @@
         </div>
       {% endif %}
 
-      <form method="POST" action="{% url 'teacher_student_bulk_delete' %}" id="bulkDeleteForm" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบนักเรียนที่เลือกทั้งหมด? ข้อมูลจะกู้คืนไม่ได้');">
+      <form method="POST" action="{% url 'teacher_student_bulk_remove' %}" id="bulkDeleteForm" 
+      onsubmit="return confirm('ยืนยันที่จะนำนักเรียนที่เลือกออกจากรายชื่อของคุณ? (ข้อมูลนักเรียนจะไม่ถูกลบจากระบบ)');">
         {% csrf_token %}
 
         <div class="mb-4 flex justify-end">
-            <button type="submit" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-4 py-2 rounded-lg transition font-semibold flex items-center gap-2">
-                <span>🗑️ ลบที่เลือก</span>
+            <button type="submit" class="text-xs bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-600 hover:text-white px-4 py-2 rounded-lg transition font-semibold flex items-center gap-2">
+                <span>📤 นำออกจากรายชื่อ</span>
             </button>
         </div>
 
@@ -133,7 +137,8 @@
                   <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
               </th>
 
-              <th class="px-3 py-3">ชื่อผู้ใช้ (รหัส)</th> <th class="px-3 py-3">ห้องเรียน</th>
+              <th class="px-3 py-3">ชื่อผู้ใช้ (รหัส)</th> 
+              <th class="px-3 py-3">ห้องเรียน</th>
               <th class="px-3 py-3 text-center">สถานะความเสี่ยง</th>
               <th class="px-3 py-3 text-right rounded-tr-lg">จัดการ</th>
             </tr>
@@ -153,25 +158,39 @@
                   {{ s.class_name }}
                 </td>
                 <td class="px-3 py-3 text-center">
-                  {% if s.risk_status == "normal" %}
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">ปลอดภัย</span>
-                  {% elif s.risk_status == "warning" %}
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">เฝ้าระวัง</span>
-                  {% elif s.risk_status == "critical" %}
-                    <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">เสี่ยงสูง</span>
-                  {% else %}
-                     <span class="text-gray-400 text-[10px]">-</span>
-                  {% endif %}
+                    <div class="flex flex-col items-center gap-1">
+                        
+                        {% if s.custom_status == "normal" %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                ปลอดภัย
+                            </span>
+                        {% elif s.custom_status == "warning" %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-700 border border-yellow-200">
+                                เฝ้าระวัง
+                            </span>
+                        {% elif s.custom_status == "critical" %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-red-100 text-red-700 border border-red-200">
+                                เสี่ยงสูง
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-gray-100 text-gray-500 border border-gray-200">
+                                รอข้อมูล
+                            </span>
+                        {% endif %}
+                    </div>
                 </td>
                 <td class="px-3 py-3 text-right space-x-2">
                    <a href="{% url 'teacher_student_detail' s.id %}" class="text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 px-2 py-1 rounded-md transition">ดูข้อมูล</a>
-                   <a href="{% url 'teacher_student_delete' s.id %}" onclick="return confirm('ยืนยันการลบนักเรียน {{ s.user.username }}?')" class="text-gray-400 hover:text-red-600 px-2 py-1 transition">ลบ</a>
+                   
+                   <a href="{% url 'teacher_student_remove' s.id %}" 
+                      onclick="return confirm('นำนักเรียน {{ s.user.username }} ออกจากรายชื่อ?')" 
+                      class="text-gray-400 hover:text-orange-600 px-2 py-1 transition">นำออก</a>
                 </td>
               </tr>
             {% empty %}
               <tr>
                 <td colspan="5" class="px-3 py-8 text-center text-sm text-gray-500">
-                  ไม่พบข้อมูลนักเรียน
+                  ไม่พบข้อมูลนักเรียนในรายชื่อของคุณ
                 </td>
               </tr>
             {% endfor %}

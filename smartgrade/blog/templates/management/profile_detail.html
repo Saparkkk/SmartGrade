@@ -9,9 +9,9 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 
-<body class="min-h-screen bg-slate-50 text-slate-800">
+<body class="min-h-screen bg-gray-50/50 text-slate-800">
 
-<header class="bg-white border-b border-gray-200 shadow-sm">
+<header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
   <div class="max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
     <div class="flex items-center gap-3">
       <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center text-white font-bold">
@@ -23,58 +23,191 @@
       </div>
     </div>
 
-    <a href="{% url 'dashboard' %}"
-       class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs hover:bg-slate-200">
-      กลับแดชบอร์ด
-    </a>
+    <div class="flex gap-3">
+        <a href="{% url 'dashboard' %}"
+           class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition">
+          กลับแดชบอร์ด
+        </a>
+        <a href="{% url 'profile_edit' %}"
+           class="hidden sm:inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition">
+          ✏️ แก้ไขข้อมูล
+        </a>
+    </div>
   </div>
 </header>
 
-<main class="max-w-3xl mx-auto px-4 md:px-0 py-8">
-  <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 md:p-8">
+<main class="max-w-6xl mx-auto px-4 md:px-6 py-8">
 
-    <div class="flex items-center gap-4 mb-6">
-      <div class="h-14 w-14 rounded-full bg-indigo-500 text-white flex items-center justify-center text-lg font-semibold">
-        {{ first_name|default:username|slice:":1"|upper }}
-      </div>
-      <div>
-        <h2 class="text-xl font-semibold text-gray-800">
-          {{ first_name }} {{ last_name }}{% if not first_name and not last_name %}{{ username }}{% endif %}
-        </h2>
-        <p class="text-sm text-gray-500">
-          บทบาท:
-          {% if role == 'teacher' %}ครู{% else %}นักเรียน{% endif %}
-        </p>
-      </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <div class="lg:col-span-1 space-y-6">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
+                <div class="relative w-32 h-32 mx-auto mb-4">
+                    <div class="w-full h-full rounded-full border-4 border-indigo-50 shadow-inner overflow-hidden">
+                        {% if user_profile.profile_image %}
+                            <img src="{{ user_profile.profile_image.url }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=6366f1&color=fff&size=128" class="w-full h-full object-cover">
+                        {% endif %}
+                    </div>
+                    <div class="absolute bottom-0 right-0 transform translate-x-1/4">
+                         <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm border-2 border-white
+                            {% if role == 'teacher' %}bg-indigo-600 text-white{% else %}bg-emerald-500 text-white{% endif %}">
+                            {% if role == 'teacher' %}Teacher{% else %}Student{% endif %}
+                        </span>
+                    </div>
+                </div>
+
+                <h2 class="text-xl font-bold text-gray-900 mt-2">
+                    {{ request.user.first_name }} {{ request.user.last_name }}
+                </h2>
+                
+                {% if user_profile.nickname %}
+                    <p class="text-sm text-indigo-600 font-medium mt-1">
+                        ({% if role == 'teacher' %}ครู{% endif %}{{ user_profile.nickname }})
+                    </p>
+                {% endif %}
+                
+                <p class="text-xs text-gray-400 mt-2">@{{ request.user.username }}</p>
+
+                <div class="h-px bg-gray-100 my-4 w-3/4 mx-auto"></div>
+
+                <div class="text-sm text-gray-600 leading-relaxed px-2">
+                    {% if user_profile.bio %}
+                        "{{ user_profile.bio }}"
+                    {% else %}
+                        <span class="text-gray-400 italic">ยังไม่มีข้อมูลแนะนำตัว</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+                <div class="grid grid-cols-2 divide-x divide-gray-100 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800">
+                             {% if role == 'teacher' %}Active{% else %}{{ user_profile.class_name|default:"-" }}{% endif %}
+                        </div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-wide mt-1">
+                             {% if role == 'teacher' %}Status{% else %}Classroom{% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800">{{ request.user.date_joined|date:"Y" }}</div>
+                        <div class="text-[10px] text-gray-400 uppercase tracking-wide mt-1">Since</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sm:hidden">
+                <a href="{% url 'profile_edit' %}" class="block w-full py-3 text-center bg-indigo-600 text-white rounded-xl font-medium shadow-sm">
+                    แก้ไขข้อมูล
+                </a>
+            </div>
+        </div>
+
+        <div class="lg:col-span-2 space-y-6">
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
+                    <span class="text-lg">🎓</span>
+                    <h3 class="font-bold text-gray-900 text-sm md:text-base">ข้อมูลทางวิชาการ</h3>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4">
+                    {% if role == 'teacher' %}
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">กลุ่มสาระการเรียนรู้</p>
+                            <p class="font-medium text-gray-900 text-lg">
+                                {{ user_profile.department|default:"- ไม่ระบุ -" }}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">ตำแหน่ง</p>
+                            <p class="font-medium text-gray-900">
+                                {{ user_profile.position|default:"ครูผู้สอน" }}
+                            </p>
+                        </div>
+                    {% else %}
+                        <div>
+                            <p class="text-xs text-gray-500 mb-1">ระดับชั้น / ห้อง</p>
+                            <p class="font-medium text-gray-900 text-lg">
+                                {{ user_profile.class_name|default:"- ไม่ระบุ -" }}
+                            </p>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="md:col-span-2">
+                        <p class="text-xs text-gray-500 mb-1">{% if role == 'teacher' %}รหัสบุคลากร{% else %}รหัสนักเรียน{% endif %}</p>
+                        <div class="inline-flex items-center px-2.5 py-1 rounded bg-gray-100 text-gray-600 text-sm font-mono">
+                            {{ request.user.username }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
+                    <span class="text-lg">📞</span>
+                    <h3 class="font-bold text-gray-900 text-sm md:text-base">ช่องทางการติดต่อ</h3>
+                </div>
+                <div class="p-6 space-y-5">
+                    <div class="flex items-center gap-4 group">
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition">
+                            📧
+                        </div>
+                        <div class="flex-1 border-b border-gray-50 pb-2">
+                            <p class="text-xs text-gray-500">อีเมล (Email)</p>
+                            <p class="font-medium text-gray-900">{{ request.user.email }}</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-4 group">
+                        <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition">
+                            📱
+                        </div>
+                        <div class="flex-1 border-b border-gray-50 pb-2">
+                            <p class="text-xs text-gray-500">เบอร์โทรศัพท์ (Phone)</p>
+                            <p class="font-medium text-gray-900">
+                                {{ user_profile.phone|default:"- ไม่ระบุ -" }}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if role == 'teacher' %}
+                    <div class="flex items-center gap-4 group">
+                        <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0 group-hover:bg-green-100 transition">
+                            💬
+                        </div>
+                        <div class="flex-1 border-b border-gray-50 pb-2">
+                            <p class="text-xs text-gray-500">Line ID</p>
+                            <p class="font-medium text-gray-900">
+                                {{ user_profile.line_id|default:"- ไม่ระบุ -" }}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
+                    <span class="text-lg">🔒</span>
+                    <h3 class="font-bold text-gray-900 text-sm md:text-base">ความปลอดภัย</h3>
+                </div>
+                <div class="p-6 flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">รหัสผ่าน</p>
+                        <p class="text-xs text-gray-500 mt-0.5">****************</p>
+                    </div>
+                    <button class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
+                        เปลี่ยนรหัสผ่าน
+                    </button>
+                </div>
+            </div>
+
+        </div>
     </div>
 
-    <dl class="space-y-3 text-sm">
-      <div class="flex justify-between">
-        <dt class="text-gray-500">ชื่อผู้ใช้</dt>
-        <dd class="text-gray-800 font-medium">{{ username }}</dd>
-      </div>
-
-      <div class="flex justify-between">
-        <dt class="text-gray-500">อีเมล</dt>
-        <dd class="text-gray-800 font-medium">{{ email|default:"-" }}</dd>
-      </div>
-
-      {% if role == 'student' %}
-      <div class="flex justify-between">
-        <dt class="text-gray-500">ห้องเรียน</dt>
-        <dd class="text-gray-800 font-medium">{{ class_name|default:"-" }}</dd>
-      </div>
-      {% endif %}
-    </dl>
-
-    <div class="mt-6">
-      <a href="{% url 'profile_edit' %}"
-         class="inline-flex items-center px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-        แก้ไขโปรไฟล์
-      </a>
-    </div>
-
-  </div>
 </main>
 
 </body>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>รายละเอียดรายวิชา | SmartGrade</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+      body { font-family: 'Sarabun', sans-serif; }
+      @media print {
+        .no-print { display: none !important; }
+      }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
+
+  <header class="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm no-print">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+              <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center text-white font-bold shadow-md">
+                  SG
+              </div>
+              <div>
+                  <h1 class="text-lg font-bold text-gray-900 leading-tight">SmartGrade</h1>
+                  <p class="text-xs text-gray-500">Subject Detail View</p>
+              </div>
+          </div>
+          <a href="{% url 'student_dashboard' %}" class="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-lg text-sm font-medium transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+              กลับหน้าแดชบอร์ด
+          </a>
+      </div>
+  </header>
+
+  <main class="flex-grow w-full max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <span class="px-3 py-1 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold tracking-wider uppercase border border-indigo-100">
+                Subject
+            </span>
+            <h2 class="text-3xl font-bold text-gray-900 mt-2">{{ subject_name }}</h2>
+            
+            <p class="text-gray-500 mt-1 flex items-center gap-2">
+                <span>ภาคเรียนที่ 1/2568</span>
+                <span>•</span>
+                <span>ครูผู้สอน:</span>
+                <span class="font-semibold text-indigo-600">
+                    {% if teacher %}
+                        อ.{{ teacher.first_name }} {{ teacher.last_name }}
+                    {% else %}
+                        <span class="text-gray-400 font-normal">- ไม่ระบุ -</span>
+                    {% endif %}
+                </span>
+            </p>
+
+        </div>
+          
+          <div class="flex items-center gap-3">
+             {% if attendance_rate < 80 %}
+                <div class="px-4 py-2 bg-red-50 text-red-700 rounded-xl border border-red-100 flex items-center gap-2">
+                    <span class="relative flex h-3 w-3">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span class="font-bold text-sm">กลุ่มเสี่ยง (ขาดเรียนบ่อย)</span>
+                </div>
+             {% else %}
+                <div class="px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl border border-emerald-100 flex items-center gap-2">
+                    <span class="h-2.5 w-2.5 rounded-full bg-emerald-500"></span>
+                    <span class="font-bold text-sm">สถานะปกติ</span>
+                </div>
+             {% endif %}
+          </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group">
+              <div class="absolute right-0 top-0 w-24 h-24 bg-blue-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <p class="text-sm text-gray-500 font-medium relative z-10">คะแนนเก็บเฉลี่ย (Quiz)</p>
+              <div class="flex items-end gap-2 mt-2 relative z-10">
+                  <span class="text-4xl font-bold text-gray-800">{{ avg_score|floatformat:0 }}</span>
+                  <span class="text-sm text-gray-400 mb-1">/ 20</span>
+              </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group">
+              <div class="absolute right-0 top-0 w-24 h-24 {% if attendance_rate < 80 %}bg-red-50{% else %}bg-emerald-50{% endif %} rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <p class="text-sm text-gray-500 font-medium relative z-10">การเข้าเรียน (Attendance)</p>
+              <div class="flex items-end gap-2 mt-2 relative z-10">
+                  <span class="text-4xl font-bold {% if attendance_rate < 80 %}text-red-600{% else %}text-emerald-600{% endif %}">
+                      {{ attendance_rate|floatformat:0 }}%
+                  </span>
+              </div>
+          </div>
+
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden group">
+              <div class="absolute right-0 top-0 w-24 h-24 bg-purple-50 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110"></div>
+              <p class="text-sm text-gray-500 font-medium relative z-10">จำนวนครั้งที่บันทึก</p>
+              <div class="flex items-end gap-2 mt-2 relative z-10">
+                  <span class="text-4xl font-bold text-purple-600">{{ records|length }}</span>
+                  <span class="text-sm text-gray-400 mb-1">คาบเรียน</span>
+              </div>
+          </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+          <h3 class="font-bold text-gray-800 mb-4">📈 พัฒนาการคะแนนสอบ (Quiz Trend)</h3>
+          <div class="h-64 w-full">
+              <canvas id="scoreChart"></canvas>
+          </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+              <h3 class="font-bold text-gray-800">📅 ประวัติการเรียนรายคาบ</h3>
+              <button onclick="window.print()" class="text-xs bg-white border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition no-print">
+                  🖨️ พิมพ์รายงาน
+              </button>
+          </div>
+          
+          <div class="overflow-x-auto">
+              <table class="w-full text-sm text-left">
+                  <thead class="bg-gray-50 text-gray-500 uppercase text-xs font-semibold">
+                      <tr>
+                          <th class="px-6 py-4">วันที่</th>
+                          <th class="px-6 py-4 text-center">สถานะเข้าเรียน</th>
+                          <th class="px-6 py-4 text-center">การส่งงาน</th>
+                          <th class="px-6 py-4 text-center">คะแนน Quiz</th>
+                          <th class="px-6 py-4 text-center">คะแนนกิจกรรม</th>
+                      </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-100">
+                      {% for r in records %}
+                      <tr class="hover:bg-indigo-50/30 transition duration-150">
+                          <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                              {{ r.record_date|date:"d M Y" }}
+                          </td>
+                          <td class="px-6 py-4 text-center">
+                            {% if r.attendance_score >= 80 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></span>
+                                    มาเรียน
+                                </span>
+                            {% elif r.attendance_score > 0 %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-yellow-500 mr-1.5"></span>
+                                    มาสาย
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-red-500 mr-1.5"></span>
+                                    ขาดเรียน
+                                </span>
+                            {% endif %}
+                          </td>
+                          <td class="px-6 py-4 text-center">
+                              {% if r.homework_done %}
+                                  <span class="text-emerald-600 font-semibold text-xs border border-emerald-200 bg-emerald-50 px-2 py-1 rounded-md">
+                                      ✓ ส่งแล้ว
+                                  </span>
+                              {% else %}
+                                  <span class="text-gray-400 text-xs">
+                                      -
+                                  </span>
+                              {% endif %}
+                          </td>
+                          <td class="px-6 py-4 text-center font-bold text-indigo-600">
+                              {{ r.quiz_score|default:"-" }}
+                          </td>
+                          <td class="px-6 py-4 text-center text-gray-600">
+                              {{ r.activity_score|default:"-" }}
+                          </td>
+                      </tr>
+                      {% empty %}
+                      <tr>
+                          <td colspan="5" class="px-6 py-12 text-center text-gray-400 bg-gray-50/50">
+                              <p class="text-lg">📭</p>
+                              <p>ยังไม่มีข้อมูลการบันทึกในขณะนี้</p>
+                          </td>
+                      </tr>
+                      {% endfor %}
+                  </tbody>
+              </table>
+          </div>
+      </div>
+
+  </main>
+
+  <footer class="bg-white border-t border-gray-200 mt-auto py-6 no-print">
+      <div class="max-w-6xl mx-auto px-4 text-center text-xs text-gray-400">
+          &copy; 2026 SmartGrade System. All rights reserved.
+      </div>
+  </footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        
+        // ดึงข้อมูลจาก Django Template มาใส่ใน JS Array
+        // หมายเหตุ: ข้อมูลใน records เรียงจาก ใหม่->เก่า แต่กราฟควรเรียง เก่า->ใหม่ เลยต้อง reverse
+        const labels = [{% for r in records reversed %}"{{ r.record_date|date:'d/m' }}",{% endfor %}];
+        const quizData = [{% for r in records reversed %}{{ r.quiz_score }},{% endfor %}];
+        const attData = [{% for r in records reversed %}{{ r.attendance_score }},{% endfor %}];
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'คะแนนสอบ (Quiz)',
+                        data: quizData,
+                        borderColor: '#4f46e5', // Indigo-600
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        borderWidth: 3,
+                        tension: 0.4, // เส้นโค้งสวยๆ
+                        fill: true,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#4f46e5',
+                        pointRadius: 5
+                    },
+                    {
+                        label: 'คะแนนเข้าเรียน',
+                        data: attData,
+                        borderColor: '#10b981', // Emerald-500
+                        borderWidth: 2,
+                        borderDash: [5, 5], // เส้นประ
+                        tension: 0.4,
+                        pointRadius: 0, // ไม่โชว์จุด
+                        hidden: true // ซ่อนไว้ก่อน (Optional)
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        align: 'end',
+                        labels: { usePointStyle: true, boxWidth: 8 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100, // สมมติคะแนนเต็ม 100 หรือปรับตามจริง
+                        grid: { borderDash: [2, 4], color: '#f3f4f6' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    });
+  </script>
+
+</body>
+</html>

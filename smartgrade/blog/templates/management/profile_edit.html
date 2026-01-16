@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 
-<body class="min-h-screen bg-slate-50 text-slate-800">
+<body class="bg-gray-50 min-h-screen font-sans text-gray-600">
 
 <header class="bg-white border-b border-gray-200 shadow-sm">
   <div class="max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
@@ -19,102 +19,237 @@
       </div>
       <div>
         <p class="text-lg font-semibold text-gray-800">SmartGrade</p>
-        <p class="text-xs text-gray-500">แก้ไขโปรไฟล์</p>
+        <p class="text-xs text-gray-500">แก้ไขข้อมูลส่วนตัว</p>
       </div>
     </div>
 
     <a href="{% url 'profile' %}"
-       class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs hover:bg-slate-200">
-      ย้อนกลับไปดูข้อมูล
+       class="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition">
+      ← กลับไปหน้าโปรไฟล์
     </a>
   </div>
 </header>
 
-<main class="max-w-3xl mx-auto px-4 md:px-0 py-8">
-  <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-6 md:p-8">
-
-    <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-4">
-      {% if role == 'teacher' %}แก้ไขโปรไฟล์ครู{% else %}แก้ไขโปรไฟล์นักเรียน{% endif %}
-    </h2>
-
-    {% if messages %}
-      <div class="mb-4 space-y-2">
-        {% for m in messages %}
-          <p class="text-sm px-4 py-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
-            {{ m }}
-          </p>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    <form method="post" class="space-y-4">
-      {% csrf_token %}
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ</label>
-        {{ form.first_name.errors }}
-        <input type="text" name="first_name"
-               value="{{ form.first_name.value|default_if_none:'' }}"
-               class="w-full px-4 py-2 border border-gray-300 rounded-xl
-                      focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">นามสกุล</label>
-        {{ form.last_name.errors }}
-        <input type="text" name="last_name"
-               value="{{ form.last_name.value|default_if_none:'' }}"
-               class="w-full px-4 py-2 border border-gray-300 rounded-xl
-                      focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">อีเมล</label>
-        {{ form.email.errors }}
-        <input type="email" name="email"
-               value="{{ form.email.value|default_if_none:'' }}"
-               class="w-full px-4 py-2 border border-gray-300 rounded-xl
-                      focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
-      </div>
-
-      {% if role == 'student' %}
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">ห้องเรียน</label>
-        {{ form.class_name.errors }}
-        <input type="text" name="class_name"
-               value="{{ form.class_name.value|default_if_none:'' }}"
-               placeholder="เช่น ม.3/2"
-               class="w-full px-4 py-2 border border-gray-300 rounded-xl
-                      focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500">
-      </div>
-      {% endif %}
-      
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">รูปโปรไฟล์</label>
-        {{ form.profile_image.errors }}
-        <input type="file" name="profile_image" accept="image/*"
-              class="block w-full text-sm text-gray-700
-                      file:mr-4 file:py-2 file:px-4
-                      file:rounded-full file:border-0
-                      file:text-sm file:font-semibold
-                      file:bg-indigo-50 file:text-indigo-700
-                      hover:file:bg-indigo-100">
-        {% if user_profile.profile_image %}
-          <p class="text-xs text-gray-500 mt-1">รูปปัจจุบัน:</p>
-          <img src="{{ user_profile.profile_image.url }}" alt="Profile image"
-              class="mt-1 h-16 w-16 rounded-full object-cover border border-gray-200">
-        {% endif %}
-      </div>
-
-      <div class="pt-2">
-        <button type="submit"
-                class="inline-flex items-center px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-          บันทึกการเปลี่ยนแปลง
-        </button>
-      </div>
-    </form>
+<main class="max-w-4xl mx-auto px-4 md:px-6 py-8">
+  
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">
+      {% if role == 'teacher' %}แก้ไขข้อมูลครู{% else %}แก้ไขข้อมูลนักเรียน{% endif %}
+    </h1>
+    <p class="text-sm text-gray-500 mt-1">อัปเดตข้อมูลส่วนตัวและรูปภาพโปรไฟล์ของคุณ</p>
   </div>
+
+  {% if messages %}
+    <div class="mb-6 space-y-2">
+      {% for m in messages %}
+        <div class="flex items-center gap-2 px-4 py-3 rounded-xl {% if m.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %} text-sm">
+           <span>{% if m.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
+           {{ m }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" class="space-y-6">
+    {% csrf_token %}
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+        <h3 class="font-semibold text-gray-900">ข้อมูลทั่วไป</h3>
+        <span class="text-[10px] uppercase tracking-wider font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">Public</span>
+      </div>
+      
+      <div class="p-6 md:p-8">
+        <div class="flex flex-col md:flex-row gap-8 items-start">
+          
+          <div class="flex flex-col items-center gap-3 shrink-0">
+             <div class="relative group cursor-pointer" onclick="document.getElementById('file-upload').click()">
+                <div class="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 relative">
+                  {% if user_profile.profile_image %}
+                    <img id="avatar-preview" src="{{ user_profile.profile_image.url }}" class="w-full h-full object-cover">
+                  {% else %}
+                    <img id="avatar-preview" src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=6366f1&color=fff" class="w-full h-full object-cover">
+                  {% endif %}
+                  <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span class="text-white text-xs">เปลี่ยนรูป</span>
+                  </div>
+                </div>
+                <div class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md border border-gray-100 text-indigo-600">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
+                </div>
+             </div>
+             <p class="text-xs text-gray-500">คลิกที่รูปเพื่ออัปโหลด</p>
+             <input id="file-upload" type="file" name="profile_image" accept="image/*" class="hidden" onchange="previewImage(event)">
+          </div>
+
+          <div class="flex-1 w-full space-y-5">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                   <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อจริง <span class="text-red-500">*</span></label>
+                   <input type="text" name="first_name" required
+                          value="{{ form.first_name.value|default_if_none:request.user.first_name }}"
+                          class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+                   {{ form.first_name.errors }}
+                </div>
+                <div>
+                   <label class="block text-sm font-medium text-gray-700 mb-1.5">นามสกุล <span class="text-red-500">*</span></label>
+                   <input type="text" name="last_name" required
+                          value="{{ form.last_name.value|default_if_none:request.user.last_name }}"
+                          class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+                   {{ form.last_name.errors }}
+                </div>
+              </div>
+
+              <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อเล่น</label>
+                  <input type="text" name="nickname"
+                         value="{{ form.nickname.value|default_if_none:'' }}"
+                         class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+              </div>
+
+              <div>
+                 <label class="block text-sm font-medium text-gray-700 mb-1.5">แนะนำตัวสั้นๆ (Bio)</label>
+                 <textarea name="bio" rows="3" placeholder="เขียนแนะนำตัวให้นักเรียนรู้จัก..."
+                           class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">{{ form.bio.value|default_if_none:'' }}</textarea>
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <h3 class="font-semibold text-gray-900">
+            {% if role == 'teacher' %}ข้อมูลการสอน & ติดต่อ{% else %}ข้อมูลการเรียน{% endif %}
+        </h3>
+      </div>
+      <div class="p-6 md:p-8">
+         
+         {% if role == 'student' %}
+         <div class="space-y-5">
+            <div>
+               <label class="block text-sm font-medium text-gray-700 mb-1.5">ห้องเรียน</label>
+               <div class="relative">
+                   <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">🎓</span>
+                   <input type="text" name="class_name" 
+                          value="{{ form.class_name.value|default_if_none:'' }}" placeholder="เช่น ม.4/1"
+                          class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+               </div>
+               {{ form.class_name.errors }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+               <div>
+                   <label class="block text-sm font-medium text-gray-700 mb-1.5">เบอร์โทรศัพท์</label>
+                   <input type="tel" name="phone" placeholder="08x-xxx-xxxx"
+                          value="{{ form.phone.value|default_if_none:'' }}"
+                          class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+               </div>
+               <div>
+                   <label class="block text-sm font-medium text-gray-700 mb-1.5">Line ID</label>
+                   <input type="text" name="line_id" placeholder="@..."
+                          value="{{ form.line_id.value|default_if_none:'' }}"
+                          class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+               </div>
+            </div>
+         </div>
+
+         {% else %}
+         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+               <label class="block text-sm font-medium text-gray-700 mb-1.5">กลุ่มสาระ / แผนก</label>
+               <select name="department" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+                   <option value="">-- เลือก --</option>
+                   <option value="math" {% if form.department.value == 'math' %}selected{% endif %}>คณิตศาสตร์</option>
+                   <option value="sci" {% if form.department.value == 'sci' %}selected{% endif %}>วิทยาศาสตร์</option>
+                   <option value="eng" {% if form.department.value == 'eng' %}selected{% endif %}>ภาษาต่างประเทศ</option>
+                   <option value="thai" {% if form.department.value == 'thai' %}selected{% endif %}>ภาษาไทย</option>
+                   <option value="soc" {% if form.department.value == 'soc' %}selected{% endif %}>สังคมศึกษา</option>
+                   <option value="art" {% if form.department.value == 'art' %}selected{% endif %}>ศิลปะ</option>
+                   <option value="pe" {% if form.department.value == 'pe' %}selected{% endif %}>สุขศึกษาและพลศึกษา</option>
+                   <option value="work" {% if form.department.value == 'work' %}selected{% endif %}>การงานอาชีพ</option>
+               </select>
+            </div>
+            <div>
+               <label class="block text-sm font-medium text-gray-700 mb-1.5">เบอร์โทรศัพท์</label>
+               <input type="tel" name="phone" placeholder="08x-xxx-xxxx"
+                      value="{{ form.phone.value|default_if_none:'' }}"
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+            </div>
+            <div>
+               <label class="block text-sm font-medium text-gray-700 mb-1.5">Line ID</label>
+               <input type="text" name="line_id" placeholder="@..."
+                      value="{{ form.line_id.value|default_if_none:'' }}"
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+            </div>
+            <div>
+               <label class="block text-sm font-medium text-gray-700 mb-1.5">ตำแหน่ง</label>
+               <input type="text" name="position" placeholder="เช่น ครูผู้สอน"
+                      value="{{ form.position.value|default_if_none:'' }}"
+                      class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
+            </div>
+         </div>
+         {% endif %}
+
+      </div>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+        <h3 class="font-semibold text-gray-900">บัญชีผู้ใช้</h3>
+      </div>
+      <div class="p-6 md:p-8">
+         <label class="block text-sm font-medium text-gray-700 mb-1.5">อีเมล (Login ID)</label>
+         <input type="email" name="email" readonly
+                value="{{ form.email.value|default_if_none:request.user.email }}"
+                class="w-full px-4 py-2.5 bg-gray-100 border border-gray-300 text-gray-500 text-sm rounded-xl cursor-not-allowed">
+         <p class="text-xs text-gray-400 mt-2">หากต้องการเปลี่ยนอีเมล กรุณาติดต่อผู้ดูแลระบบ</p>
+      </div>
+    </div>
+
+    <div class="sticky bottom-4 z-20">
+        <div class="bg-white/90 backdrop-blur border border-gray-200 shadow-xl rounded-2xl p-4 flex justify-between items-center max-w-4xl mx-auto">
+            <span class="text-xs text-gray-500 hidden sm:inline">ตรวจสอบข้อมูลก่อนบันทึก</span>
+            <div class="flex gap-3 w-full sm:w-auto justify-end">
+                <a href="{% url 'profile' %}" class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition">
+                    ยกเลิก
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 shadow-lg shadow-indigo-500/30 transition transform active:scale-95">
+                    บันทึกการเปลี่ยนแปลง
+                </button>
+            </div>
+        </div>
+    </div>
+
+  </form>
+
+  <div class="mt-12 pt-8 border-t border-gray-200">
+     <h3 class="text-sm font-bold text-red-600 mb-3">Danger Zone</h3>
+     <div class="bg-red-50 border border-red-100 rounded-xl p-4 flex justify-between items-center">
+        <div>
+           <p class="text-sm font-semibold text-red-800">เปลี่ยนรหัสผ่าน</p>
+           <p class="text-xs text-red-600/70">เพื่อความปลอดภัย ควรเปลี่ยนรหัสผ่านทุก 3 เดือน</p>
+        </div>
+        <button class="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-medium rounded-lg hover:bg-red-50 transition">
+           Reset Password
+        </button>
+     </div>
+  </div>
+
 </main>
+
+<script>
+  function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+      const output = document.getElementById('avatar-preview');
+      output.src = reader.result;
+    }
+    if(event.target.files[0]) {
+      reader.readAsDataURL(event.target.files[0]);
+    }
+  }
+</script>
 
 </body>
 </html>
