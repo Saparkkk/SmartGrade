@@ -17,7 +17,7 @@
 
   <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-    <header class="bg-white/80 backdrop-blur border-b border-gray-200">
+    <header class="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-50">
       <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
@@ -60,6 +60,26 @@
 
     <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8 md:py-10 space-y-6">
 
+      {% if latest_feedback %}
+      <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r shadow-sm flex items-start gap-3 animate-fade-in-down">
+          <div class="shrink-0 text-yellow-400 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+          </div>
+          <div>
+              <p class="text-sm font-bold text-yellow-800">
+                  ข้อความล่าสุดจากครู (วิชา {{ latest_feedback.subject }})
+              </p>
+              <p class="text-sm text-yellow-700 mt-1">
+                  "{{ latest_feedback.message }}"
+              </p>
+              <p class="text-[10px] text-yellow-600 mt-1">
+                  เมื่อ: {{ latest_feedback.created_at|date:"d M H:i" }}
+              </p>
+          </div>
+      </div>
+      {% endif %}
       <section class="grid gap-6 md:grid-cols-[1.3fr,1fr]">
         <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-7">
           <h2 class="text-xl md:text-2xl font-semibold text-gray-900 mb-2">
@@ -237,10 +257,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {% for sub in subject_data %}
               <a href="{% url 'student_subject_detail' sub.name %}" class="block group">
-                <div class="bg-white border border-gray-200 rounded-2xl p-5 ...">
-                    <div class="flex justify-between items-start mb-3">
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 relative overflow-hidden">
+                    
+                    <div class="flex justify-between items-start mb-3 relative z-10">
                         <div>
-                            <h4 class="font-bold text-gray-800">{{ sub.name }}</h4>
+                            <h4 class="font-bold text-gray-800 line-clamp-1" title="{{ sub.name }}">{{ sub.name }}</h4>
                             <span class="text-[10px] px-2 py-0.5 rounded-full border {{ sub.bg_class }}">
                                 {% if sub.status == 'Good' %}ปลอดภัย{% elif sub.status == 'Warning' %}เฝ้าระวัง{% else %}เสี่ยงสูง{% endif %}
                             </span>
@@ -250,12 +271,24 @@
                         </div>
                     </div>
                     
-                    <div class="w-full bg-gray-100 rounded-full h-2 mb-4">
+                    <div class="w-full bg-gray-100 rounded-full h-2 mb-2 relative z-10">
                         <div class="h-2 rounded-full transition-all duration-1000" 
                             style="width: {{ sub.score }}%; background-color: {% if sub.score >= 70 %}#10b981{% elif sub.score >= 50 %}#f59e0b{% else %}#ef4444{% endif %};"> 
                         </div>
                     </div>
-                    ...
+
+                    <div class="flex justify-between items-center px-1 text-xs text-gray-500 relative z-10">
+                         <div class="flex items-center gap-1" title="คะแนนสอบ">
+                             <span>📝</span> <span class="font-medium text-gray-700">{{ sub.stats.quiz }}%</span>
+                         </div>
+                         <div class="flex items-center gap-1" title="การเข้าเรียน">
+                             <span>🏫</span> <span class="font-medium text-gray-700">{{ sub.stats.att }}%</span>
+                         </div>
+                         <div class="flex items-center gap-1" title="การส่งงาน">
+                             <span>🤝</span> <span class="font-medium text-gray-700">{{ sub.stats.hw }}%</span>
+                         </div>
+                    </div>
+                    <div class="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-br from-gray-50 to-indigo-50 rounded-full opacity-50 blur-xl z-0 group-hover:scale-150 transition-transform duration-500"></div>
                 </div>
               </a>
               {% endfor %}
@@ -418,7 +451,7 @@
             } else {
                 const chartEl = document.getElementById('subjectChart');
                 if(chartEl) {
-                     chartEl.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400 text-sm">ยังไม่มีข้อมูลกราฟ</div>';
+                      chartEl.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400 text-sm">ยังไม่มีข้อมูลกราฟ</div>';
                 }
             }
 

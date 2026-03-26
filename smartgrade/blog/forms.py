@@ -1,14 +1,14 @@
 from django import forms
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
-from .models import StudentProfile, BehaviorRecord, StudentFeedback, TeacherNote, UrgentContact, PrivateNote
+from .models import StudentProfile, BehaviorRecord, StudentFeedback, UrgentContact, PrivateNote
 
 class StudentForm(forms.ModelForm):
     class Meta:
         model = StudentProfile
         fields = ['class_name']
 
-# --- Form สำหรับลงทะเบียน (Register) ---
+
 class RegisterForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(required=False)
@@ -30,26 +30,20 @@ class RegisterForm(UserCreationForm):
             profile.save()
         return user
 
-# --- Form แก้ไขโปรไฟล์นักเรียน ---
 class StudentProfileForm(forms.Form):
-    # ข้อมูลจาก User Model
     first_name = forms.CharField(label="ชื่อจริง", max_length=150, required=True, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     last_name = forms.CharField(label="นามสกุล", max_length=150, required=True, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
-    # Email เป็น Readonly
+
     email = forms.EmailField(label="อีเมล", required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-xl outline-none text-gray-500', 'readonly': 'readonly'}))
     
-    # ข้อมูลจาก Profile Model
     profile_image = forms.ImageField(label="รูปโปรไฟล์", required=False)
     nickname = forms.CharField(label="ชื่อเล่น", max_length=50, required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     bio = forms.CharField(label="คติประจำใจ", required=False, widget=forms.Textarea(attrs={'rows': 3, 'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     phone = forms.CharField(label="เบอร์โทรศัพท์", max_length=20, required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     line_id = forms.CharField(label="Line ID", required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
-    # เฉพาะนักเรียน
     class_name = forms.CharField(label="ห้องเรียน", max_length=100, required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
 
-# --- Form แก้ไขโปรไฟล์ครู ---
 class TeacherProfileForm(forms.Form):
-    # --- 1. ส่วนประกาศ Field (ตามที่คุณออกแบบมา) ---
     first_name = forms.CharField(label="ชื่อจริง", max_length=150, required=True, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     last_name = forms.CharField(label="นามสกุล", max_length=150, required=True, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     email = forms.EmailField(label="อีเมล", required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 bg-gray-100 border border-gray-300 rounded-xl outline-none text-gray-500', 'readonly': 'readonly'}))
@@ -69,14 +63,13 @@ class TeacherProfileForm(forms.Form):
         ('art','ศิลปะ'),
         ('pe','สุขศึกษาและพลศึกษา'),
         ('work','การงานอาชีพ'),
-        ('comp', 'คอมพิวเตอร์'), # เผื่อเพิ่มเติม
+        ('comp', 'คอมพิวเตอร์'),
         ('guidance', 'แนะแนว'),
     ]
     department = forms.ChoiceField(label="กลุ่มสาระฯ", choices=DEPARTMENT_CHOICES, required=False, widget=forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none bg-white focus:border-indigo-500'}))
     position = forms.CharField(label="ตำแหน่ง", max_length=100, required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
     line_id = forms.CharField(label="Line ID", max_length=50, required=False, widget=forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 rounded-xl outline-none focus:border-indigo-500'}))
 
-    # --- 2. ฟังก์ชันดึงข้อมูลเก่ามาใส่ในฟอร์ม (Init) ---
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self.profile = kwargs.pop('profile', None)
@@ -95,15 +88,13 @@ class TeacherProfileForm(forms.Form):
             self.fields['position'].initial = self.profile.position
             self.fields['line_id'].initial = self.profile.line_id
 
-    # --- 3. ฟังก์ชันบันทึกข้อมูล (Save) ---
+
     def save(self):
-        # บันทึกข้อมูลลง User Table
         if self.user:
             self.user.first_name = self.cleaned_data['first_name']
             self.user.last_name = self.cleaned_data['last_name']
             self.user.save()
 
-        # บันทึกข้อมูลลง UserProfile Table
         if self.profile:
             self.profile.nickname = self.cleaned_data['nickname']
             self.profile.bio = self.cleaned_data['bio']
@@ -112,14 +103,12 @@ class TeacherProfileForm(forms.Form):
             self.profile.position = self.cleaned_data['position']
             self.profile.line_id = self.cleaned_data['line_id']
             
-            # ถ้ามีการอัปโหลดรูปใหม่ ให้บันทึก
             if self.cleaned_data.get('profile_image'):
                 self.profile.profile_image = self.cleaned_data['profile_image']
             
             self.profile.save()
 
 
-# --- Helper Widget ---
 def get_tailwind_widgets():
     return {
         'message': forms.Textarea(attrs={'rows': 3, 'class': 'w-full border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 outline-none resize-none'}),
@@ -130,29 +119,25 @@ def get_tailwind_widgets():
         'method': forms.Select(attrs={'class': 'w-full border border-gray-300 rounded-xl px-4 py-2 outline-none bg-white'}),
     }
 
-# --- Form บันทึกพฤติกรรม (BehaviorRecord) ---
 class BehaviorForm(forms.ModelForm):
-    # 1. กำหนดตัวเลือก (ค่าที่จะบันทึก, ข้อความที่จะโชว์)
     ATTENDANCE_CHOICES = [
         (100, '🟢 มาเรียน (ปกติ)'),
         (50,  '🟡 มาสาย'),
         (0,   '🔴 ขาดเรียน'),
     ]
 
-    # 2. ปรับเปลี่ยน Field ให้เป็นแบบเลือก (Dropdown)
     attendance_score = forms.TypedChoiceField(
         choices=ATTENDANCE_CHOICES,
-        coerce=int,  # บังคับให้แปลงค่าเป็นตัวเลข (Integer) ก่อนบันทึก
+        coerce=int, 
         empty_value=0,
         widget=forms.Select(attrs={
-            # ใส่ Class Tailwind ให้สวยงามเหมือนเดิม
             'class': 'w-full rounded-xl border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2.5',
         }),
         label="สถานะการเข้าเรียน"
     )
     
     ACTIVITY_CHOICES = [
-        (10, '🌟 ดีมาก (Active)'),  # หรือจะใช้ 5 คะแนนก็ได้
+        (10, '🌟 ดีมาก (Active)'), 
         (5,  '🙂 ปกติ (Passive)'),
         (0,  '😴 ไม่ร่วมกิจกรรม'),
     ]
@@ -176,7 +161,6 @@ class BehaviorForm(forms.ModelForm):
             'activity_score': forms.NumberInput(attrs={'class': 'border rounded px-3 py-2 w-full'}),
         }
 
-# --- Form Feedback นักเรียน (StudentFeedback) ---
 class FeedbackForm(forms.ModelForm):
     class Meta:
         model = StudentFeedback
@@ -184,7 +168,6 @@ class FeedbackForm(forms.ModelForm):
         widgets = get_tailwind_widgets()
         labels = {'feedback_type': 'ประเภท', 'message': 'ข้อความ'}
 
-# --- Form ติดต่อด่วน (UrgentContact) ---
 class ContactForm(forms.ModelForm):
     class Meta:
         model = UrgentContact
@@ -192,7 +175,6 @@ class ContactForm(forms.ModelForm):
         widgets = get_tailwind_widgets()
         labels = {'target': 'ส่งถึง', 'method': 'ช่องทาง', 'message': 'รายละเอียดการติดต่อ'}
 
-# --- Form บันทึกส่วนตัว (PrivateNote) ---
 class PrivateNoteForm(forms.ModelForm):
     NOTE_TYPES = [
         ('general', '📝 ทั่วไป'),

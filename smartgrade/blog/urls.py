@@ -42,7 +42,4 @@ urlpatterns = [
     path('students/bulk-remove/', views.teacher_student_bulk_remove, name='teacher_student_bulk_remove'),
 
     path('students/import/', views.student_import_csv_view, name='teacher_student_import'),
-    path('classroom/', views.classroom_mode, name='classroom_mode'),
-    path('classroom/log/<int:student_id>/<str:behavior_type>/', views.quick_behavior_log, name='quick_log'),
 ]
-

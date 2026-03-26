@@ -7,7 +7,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from .forms import RegisterForm, StudentProfileForm, TeacherProfileForm, BehaviorForm, FeedbackForm, PrivateNoteForm, ContactForm
-from .models import StudentProfile, BehaviorRecord, UserProfile, StudentProfile, StudentFeedback, PrivateNote, UrgentContact, TeacherNote, StudentScore
+from .models import StudentProfile, BehaviorRecord, UserProfile, StudentProfile, StudentFeedback, PrivateNote, UrgentContact, StudentScore
 from django.db.models import Avg, Count, Q
 from django.contrib import messages
 from .utils import auto_feedback, analyze_grade_trend
@@ -16,11 +16,6 @@ from collections import defaultdict
 from datetime import datetime
 
 def get_role_for_user(user):
-    """
-    ดึง UserProfile ถ้าไม่มีให้สร้างใหม่
-    และช่วยแก้ Role ให้ถูกต้องตามสถานะ Staff
-    """
-    # กำหนดค่าเริ่มต้น: ถ้าเป็น Staff ให้เป็น 'teacher' ถ้าไม่ใช่ให้เป็น 'student'
     default_role = 'teacher' if user.is_staff else 'student'
     
     user_profile, created = UserProfile.objects.get_or_create(
@@ -28,70 +23,21 @@ def get_role_for_user(user):
         defaults={"role": default_role} 
     )
     
-    # ✅ ระบบ Auto-Fix: 
-    # ถ้าในระบบ Django เขาเป็น Staff (ครู) แต่ใน Profile ดันบันทึกผิดว่าเป็น 'student'
-    # ให้แก้กลับเป็น 'teacher' ทันที
     if user.is_staff and user_profile.role == 'student':
         user_profile.role = 'teacher'
         user_profile.save()
         
     return user_profile
 
-def classroom_mode(request):
-    # ดึงห้องเรียนทั้งหมดมาทำ Filter หรือดึงมาทั้งหมด
-    students = StudentProfile.objects.all().order_by('class_name', 'user__username')
-    return render(request, 'management/classroom_mode.html', {'students': students})
-
-def quick_behavior_log(request, student_id, behavior_type):
-    student = get_object_or_404(StudentProfile, id=student_id)
-    
-    # สร้างหรืออัปเดต Record ของ "วันนี้"
-    record, created = BehaviorRecord.objects.get_or_create(
-        student=student,
-        record_date=timezone.now().date(),
-        defaults={
-            'attendance_score': 10, 'homework_done': False, 
-            'quiz_score': 0, 'activity_score': 10
-        }
-    )
-
-    # Logic: แปลงปุ่มกด -> เป็นคะแนน
-    if behavior_type == 'sleep':
-        record.activity_score = 5  # ตัดคะแนนกิจกรรม
-        messages.warning(request, f"บันทึก: {student.user.username} หลับในห้อง (-คะแนนกิจกรรม)")
-    
-    elif behavior_type == 'active':
-        record.activity_score = 20 # คะแนนเต็ม
-        messages.success(request, f"บันทึก: {student.user.username} มีส่วนร่วมยอดเยี่ยม (+คะแนนกิจกรรม)")
-        
-    elif behavior_type == 'late':
-        record.attendance_score = 5 # มาสาย
-        messages.warning(request, f"บันทึก: {student.user.username} มาสาย (-คะแนนเข้าเรียน)")
-        
-    elif behavior_type == 'phone':
-        record.activity_score = 0   # เล่นมือถือ
-        messages.error(request, f"บันทึก: {student.user.username} เล่นโทรศัพท์ (คะแนนกิจกรรมเป็น 0)")
-
-    record.save() # บันทึก
-    
-    return redirect('classroom_mode') # กลับไปหน้าเดิม
-
 @login_required
 def profile_detail(request):
-    """
-    หน้าโปรไฟล์: แสดงข้อมูลอย่างเดียว (ดึงจาก UserProfile ที่เป็นตารางกลาง)
-    """
-    
-    # 1. ใช้ try-except ตามรูปแบบที่คุณต้องการ
     try:
         user_profile = UserProfile.objects.get(user=request.user)
     except UserProfile.DoesNotExist:
         user_profile = None
 
-    # 2. ส่ง object ไปให้ HTML
     context = {
         "user_profile": user_profile,
-        # ต้องเช็คก่อนว่า user_profile มีค่าไหม กัน Error กรณีเป็น None
         "role": user_profile.role if user_profile else None, 
     }
 
@@ -101,12 +47,10 @@ def profile_detail(request):
 @login_required
 def profile_edit(request):
     user = request.user
-    
-    # 1. ดึง UserProfile ของผู้ใช้นี้มา
+
     user_profile, created = UserProfile.objects.get_or_create(user=user)
     role = user_profile.role
 
-    # 2. เลือกฟอร์มตามบทบาท
     if role == 'teacher':
         FormClass = TeacherProfileForm
     else:
@@ -116,37 +60,30 @@ def profile_edit(request):
         form = FormClass(request.POST, request.FILES)
         
         if form.is_valid():
-            # --- ส่วนที่ 1: บันทึกข้อมูลเข้าตาราง User ---
             user.first_name = form.cleaned_data.get('first_name', '')
             user.last_name = form.cleaned_data.get('last_name', '')
             user.save()
 
-            # --- ส่วนที่ 2: บันทึกข้อมูลเข้าตาราง UserProfile ---
             user_profile.nickname = form.cleaned_data.get('nickname', '')
             user_profile.bio = form.cleaned_data.get('bio', '')
             user_profile.phone = form.cleaned_data.get('phone', '')
-            
-            # รูปภาพ
+
             if form.cleaned_data.get('profile_image'):
                 user_profile.profile_image = form.cleaned_data.get('profile_image')
 
-            # ข้อมูลเฉพาะบทบาท
             if role == 'teacher':
                 user_profile.department = form.cleaned_data.get('department', '')
                 user_profile.position = form.cleaned_data.get('position', '')
                 user_profile.line_id = form.cleaned_data.get('line_id', '')
             elif role == 'student':
                 user_profile.class_name = form.cleaned_data.get('class_name', '')
-                # ✅ เพิ่มบรรทัดนี้ (บันทึก Line ID ของนักเรียน)
                 user_profile.line_id = form.cleaned_data.get('line_id', '')
 
-            # ✅ สั่งบันทึกลงฐานข้อมูล
             user_profile.save()
 
             messages.success(request, 'บันทึกข้อมูลเรียบร้อยแล้ว')
             return redirect('profile') # หรือชื่อ url ที่คุณตั้งไว้
     else:
-        # --- ส่วนที่ 3: เตรียมข้อมูลเดิมมาแสดงในฟอร์ม ---
         initial_data = {
             'first_name': user.first_name,
             'last_name': user.last_name,
@@ -162,7 +99,6 @@ def profile_edit(request):
             initial_data['line_id'] = user_profile.line_id
         elif role == 'student':
             initial_data['class_name'] = user_profile.class_name
-            # ✅ เพิ่มบรรทัดนี้ (ดึง Line ID เก่าของนักเรียนมาแสดง)
             initial_data['line_id'] = user_profile.line_id
 
         form = FormClass(initial=initial_data)
@@ -204,13 +140,11 @@ def evaluate_status(behavior: BehaviorRecord | None):
     if behavior is None:
         return "ยังไม่มีข้อมูล", "gray", "ยังไม่มีข้อมูลพฤติกรรม"
 
-    # สมมติ fields ใน BehaviorRecord
     total = (
         (behavior.attendance_score or 0) +
         (behavior.quiz_score or 0) +
         (behavior.activity_score or 0)
     )
-    # homework_done: True/False
     if total >= 80 and behavior.homework_done:
         return "ปลอดภัย", "green", "มีแนวโน้มผ่าน"
     elif total >= 60:
@@ -220,11 +154,6 @@ def evaluate_status(behavior: BehaviorRecord | None):
 
 @login_required
 def dashboard(request):
-    """
-    ใช้ใน redirect หลัง login:
-    - ถ้าเป็น staff -> ส่งไป teacher_dashboard
-    - ถ้าไม่ใช่ -> ส่งไป student_dashboard
-    """
     user = request.user
     user_profile = get_role_for_user(user)
     
@@ -233,8 +162,6 @@ def dashboard(request):
     else:
         return redirect("student_dashboard")
 
-# views.py
-
 @login_required
 def teacher_dashboard(request):
     if not request.user.is_staff:
@@ -242,7 +169,6 @@ def teacher_dashboard(request):
 
     all_students_raw = StudentProfile.objects.filter(teachers=request.user).select_related('user').order_by('class_name')
     
-    # ... (ส่วนจัดการ Search/Filter เหมือนเดิม) ...
     search_query = request.GET.get('q', '') 
     class_filter = request.GET.get('class_filter', '')
     query_for_filter = all_students_raw 
@@ -255,7 +181,7 @@ def teacher_dashboard(request):
     filtered_ids = set(query_for_filter.values_list('id', flat=True))
 
     table_list = []
-    widget_list = [] # สำหรับกลุ่มเสี่ยง 5 คน
+    widget_list = [] 
     all_classes = all_students_raw.values_list('class_name', flat=True).distinct().order_by('class_name')
     user_profile = get_role_for_user(request.user)
     
@@ -270,7 +196,6 @@ def teacher_dashboard(request):
 
         if latest:
             stat_att = latest.attendance_score
-            # ✅ ปรับเกณฑ์: แดงต่ำกว่า 50, เหลืองต่ำกว่า 70 (หรือตามใจคุณ)
             if stat_att < 50:
                 risk_status = "critical"
                 risk_label = "เสี่ยงสูง"
@@ -293,20 +218,17 @@ def teacher_dashboard(request):
             'risk_class': risk_class,
         }
         
-        # ✅ แก้ไขจำนวนคน: ให้ Widget โชว์เฉพาะคนที่เป็น 'critical' (แดง) เท่านั้น
-        # ถ้าคุณใส่ 'warning' เข้าไปด้วย เลขมันจะเยอะเกิน 5 คนครับ
         if risk_status == 'critical': 
-            widget_list.append(s_data) # ย่อหน้าตรงนี้คือจุดที่เคย Error ครับ
+            widget_list.append(s_data)
 
         if s.id in filtered_ids:
             table_list.append(s_data)
 
-    # กรอง ID ซ้ำ (กันเหนียว)
     unique_widget = list({v['info'].id: v for v in widget_list}.values())
 
     return render(request, 'management/teacher_dashboard.html', {
         "students": table_list,
-        "risk_list": unique_widget, # จะเหลือแค่คนเสี่ยงจริงๆ
+        "risk_list": unique_widget,
         "total_students": all_students_raw.count(),
         "risk_count": len(unique_widget),
         "search_query": search_query,
@@ -317,11 +239,9 @@ def teacher_dashboard(request):
 
 @login_required
 def teacher_student_list(request):
-    # 1. ดึงนักเรียน
     students = StudentProfile.objects.filter(teachers=request.user).select_related('user').order_by('class_name')
     user_profile = get_role_for_user(request.user)
     
-    # 2. Filter (คงเดิม)
     search_query = request.GET.get('q')
     if search_query:
         students = students.filter(
@@ -334,32 +254,25 @@ def teacher_student_list(request):
         
     all_classes = StudentProfile.objects.filter(teachers=request.user).values_list('class_name', flat=True).distinct().order_by('class_name')
 
-    # ==========================================
-    # ✅ Logic ใหม่: ดูคะแนน "ครั้งล่าสุด" เท่านั้น
-    # ==========================================
     final_list = []
     for s in students:
-        # ดึงข้อมูลเรียงจาก วันที่ล่าสุด มาก่อน (.first())
         latest_record = s.behaviors.filter(teacher=request.user).order_by('-record_date').first()
         
-        # ตั้งค่า Default
         s.debug_score = 0
         s.custom_status = "unknown"
         s.last_date = "-"
 
         if latest_record:
-            # ใช้คะแนนล่าสุด (ไม่ใช้ Avg แล้ว)
             score = latest_record.attendance_score
             s.debug_score = score
             s.last_date = latest_record.record_date
             
-            # ตัดเกรดจากคะแนนล่าสุด
             if score < 50:
-                s.custom_status = "critical"  # แดง (ถ้าได้ 34 จะเข้าอันนี้แน่นอน)
+                s.custom_status = "critical" 
             elif score < 60:
-                s.custom_status = "warning"   # เหลือง
+                s.custom_status = "warning" 
             else:
-                s.custom_status = "normal"    # เขียว
+                s.custom_status = "normal" 
             
         final_list.append(s)
 
@@ -371,25 +284,21 @@ def teacher_student_list(request):
         'user_profile': user_profile,
     })
 
-# --- 2. หน้า Detail + History + Add Behavior ---
 @login_required
 def teacher_student_detail(request, student_id):
     student = get_object_or_404(StudentProfile, id=student_id)
-    
-    # ดึงข้อมูลเฉพาะของครูคนนี้ (เพื่อแสดงผลในตาราง)
+
     behaviors = student.behaviors.filter(teacher=request.user).order_by('-record_date')
     records = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('-record_date')
     feedbacks = student.feedbacks.filter(teacher=request.user).order_by('-created_at')
     notes = PrivateNote.objects.filter(student=student, teacher=request.user).order_by('-created_at')
     contacts = student.contact_logs.filter(teacher=request.user).order_by('-created_at')
 
-    # เตรียม Form
     behavior_form = BehaviorForm()
     feedback_form = FeedbackForm()
     note_form = PrivateNoteForm()
     contact_form = ContactForm()
-    
-    # ✅ 1. สร้างแผนที่แปลง Code -> ชื่อไทย (ต้องตรงกับ models.py)
+
     dept_map = {
         'math': 'คณิตศาสตร์', 
         'sci': 'วิทยาศาสตร์', 
@@ -415,16 +324,12 @@ def teacher_student_detail(request, student_id):
                 obj.student = student
                 obj.teacher = request.user 
                 
-                # ✅✅✅ จุดแก้ไขสำคัญ: ดึงวิชาจาก Profile ครูมาใส่ ✅✅✅
                 user_profile = get_role_for_user(request.user) # ดึง Profile ครู
                 
                 if user_profile and user_profile.department:
                     dept_code = user_profile.department
-                    # แปลง code (เช่น 'math') เป็นชื่อไทย ('คณิตศาสตร์')
-                    # ถ้าไม่มีใน map ให้ใช้ชื่อเดิมไปเลย
                     obj.subject = dept_map.get(dept_code, dept_code)
                 else:
-                    # ถ้าครูยังไม่ตั้งค่า Profile ให้เป็นวิชาทั่วไป + ชื่อครู (กันเหนียว)
                     obj.subject = f"วิชาทั่วไป ({request.user.first_name})"
 
                 obj.save()
@@ -433,7 +338,6 @@ def teacher_student_detail(request, student_id):
         elif action == 'delete_behavior':
             record_id = request.POST.get('record_id')
             try:
-                # ลบเฉพาะรายการที่เป็นของนักเรียนคนนี้ และครูคนนี้เป็นคนลบ (เพื่อความปลอดภัย)
                 record_to_delete = BehaviorRecord.objects.get(id=record_id, student=student, teacher=request.user)
                 record_to_delete.delete()
                 messages.success(request, "ลบรายการเรียบร้อยแล้ว")
@@ -448,8 +352,7 @@ def teacher_student_detail(request, student_id):
                 obj = form.save(commit=False)
                 obj.student = student
                 obj.teacher = request.user
-                
-                # ดึงวิชาใส่ Feedback ด้วย
+
                 user_profile = get_role_for_user(request.user)
                 if user_profile and user_profile.department:
                     dept_code = user_profile.department
@@ -506,15 +409,11 @@ def teacher_add_student_manual(request):
             return redirect('teacher_add_student_manual')
 
         try:
-            # 1. ค้นหานักเรียน
             student = StudentProfile.objects.select_related('user').get(user__username=student_id)
             
-            # 2. เช็คว่ามีเราอยู่ในรายชื่อครูของเขาหรือยัง?
-            # (สังเกต: ใช้ .filter(...).exists() กับ ManyToMany)
             if student.teachers.filter(id=request.user.id).exists():
                 messages.warning(request, f"นักเรียน {student.user.get_full_name()} ({student_id}) อยู่ในห้องเรียนของคุณอยู่แล้ว")
             else:
-                # ✅✅✅ จุดแก้ไขสำคัญ: ใช้ .add() เพื่อเพิ่มเราเข้าไป (ไม่ลบครูคนเก่า)
                 student.teachers.add(request.user)
                 
                 messages.success(request, f"เพิ่ม {student.user.get_full_name()} เข้าสู่ห้องเรียนเรียบร้อยแล้ว (เรียนร่วมกับวิชาอื่นได้)")
@@ -529,16 +428,13 @@ def teacher_add_student_manual(request):
         'user_profile': user_profile
     })
 
-# --- 3. ลบนักเรียน (Delete) ---
 def teacher_student_delete(request, student_id):
     student = get_object_or_404(StudentProfile, id=student_id)
-    # ลบ User หลัก -> Profile และ Behavior จะหายไปเอง (Cascade)
     user = student.user
     user.delete()
     messages.success(request, f"ลบนักเรียน {user.username} เรียบร้อยแล้ว")
     return redirect('teacher_student_list')
 
-# --- 4. ลบประวัติพฤติกรรมบางรายการ ---
 def behavior_delete(request, behavior_id):
     behavior = get_object_or_404(BehaviorRecord, id=behavior_id)
     student_id = behavior.student.id
@@ -555,11 +451,9 @@ def student_dashboard(request):
 
     try:
         student = StudentProfile.objects.get(user=request.user)
-        # 1. ดึงข้อมูล
         behaviors = BehaviorRecord.objects.filter(student=student).select_related('teacher', 'teacher__profile').order_by('-record_date')[:10]
         all_records_for_graph = BehaviorRecord.objects.filter(student=student).select_related('teacher', 'teacher__profile')
         
-        # Config Map (คงเดิม)
         dept_map = {
             'math': 'คณิตศาสตร์', 'sci': 'วิทยาศาสตร์', 'eng': 'ภาษาต่างประเทศ',
             'thai': 'ภาษาไทย', 'soc': 'สังคมศึกษา', 'art': 'ศิลปะ',
@@ -579,7 +473,6 @@ def student_dashboard(request):
                 return db_sub
             return 'วิชาทั่วไป'
 
-        # จัดกลุ่มวิชา
         grouped_subjects = {}
         for record in all_records_for_graph:
             subj_name = get_subject_name(record)
@@ -590,7 +483,6 @@ def student_dashboard(request):
         subject_data = []
         chart_labels, chart_scores, chart_colors = [], [], []
 
-        # --- ส่วนที่เคยมีปัญหาเรื่องย่อหน้า (Indentation) ---
         for name, records in grouped_subjects.items():
             if name == 'ประวัติเก่า (ไม่ระบุครู)': 
                 continue
@@ -598,7 +490,6 @@ def student_dashboard(request):
             count = len(records)
             if count == 0: continue
 
-            # คำนวณคะแนนย่อย
             total_quiz = sum(r.quiz_score for r in records)
             s_quiz = min(100, (total_quiz / (count * 20)) * 100) 
             
@@ -610,11 +501,9 @@ def student_dashboard(request):
             hw_done_count = sum(1 for r in records if r.homework_done)
             s_hw = (hw_done_count / count) * 100
 
-            # คำนวณ Health Score
             raw_health = (s_att * 0.4) + (s_hw * 0.3) + (s_quiz * 0.3)
             health_score = min(100, int(raw_health))
 
-            # ✅ ปรับเกณฑ์สถานะ 70 / 50 ให้ตรงกัน
             if health_score >= 70:
                 sub_status = "Good"
                 color_hex = "#10b981"
@@ -644,12 +533,11 @@ def student_dashboard(request):
         manual_feedbacks = StudentFeedback.objects.filter(student=student).order_by('-created_at')
         urgent_messages = UrgentContact.objects.filter(student=student, target='student').select_related('teacher').order_by('-created_at')
 
-        # ภาพรวม Dashboard
         latest = BehaviorRecord.objects.filter(student=student).order_by('-record_date').first()
         status, advice = "ไม่มีข้อมูล", "-"
         if latest:
             avg = (latest.attendance_score + latest.quiz_score + latest.activity_score) / 3
-            if avg >= 70: # ปรับให้ตรงกัน
+            if avg >= 70:
                 status, advice = "ดีเยี่ยม", "รักษามาตรฐานนี้ต่อไป"
             elif avg >= 50:
                 status, advice = "ปานกลาง", "ควรเพิ่มความสม่ำเสมอ"
@@ -672,10 +560,8 @@ def student_dashboard(request):
 
 @login_required
 def student_report(request, student_id):
-    # 1. Fetch Student Data
     student = get_object_or_404(StudentProfile, id=student_id)
     
-    # 2. Handle POST requests (คงเดิม)
     if request.method == "POST":
         action = request.POST.get('action')
         if action == 'add_note':
@@ -697,21 +583,16 @@ def student_report(request, student_id):
                 messages.success(request, "บันทึกการติดต่อเรียบร้อย")
                 return redirect('student_report', student_id=student.id)
 
-    # 3. Prepare Display Data
     notes = PrivateNote.objects.filter(student=student, teacher=request.user).order_by('-created_at')
     contacts = student.contact_logs.all().order_by('-created_at')
     records = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('-record_date', '-id')
 
-    # ========================================================
-    # ✅ 4. Logic วิเคราะห์พฤติกรรมอัตโนมัติ (AI Analysis)
-    # ========================================================
-    latest_rec = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('-record_date', '-id').first()  # ดึงรายการล่าสุดตัวแรก
+    latest_rec = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('-record_date', '-id').first()
     ai_status = "unknown"
     ai_message = "ไม่พบข้อมูลคะแนนล่าสุดสำหรับการวิเคราะห์"
 
     if latest_rec:
         score = latest_rec.attendance_score
-        # 🚩 ปรับ Logic ความเสี่ยงให้ตรงกับที่ต้องการ (เช่น < 50 คือเสี่ยงสูง)
         if score < 50:
             ai_status = "critical"
             ai_message = f"นักเรียนมีพฤติกรรมเสี่ยงสูง (คะแนนล่าสุด {score}%) พบว่ามีการขาดเรียนหรือขาดส่งงานในระดับวิกฤต ครูควรติดต่อผู้ปกครองทันที"
@@ -722,8 +603,6 @@ def student_report(request, student_id):
             ai_status = "normal"
             ai_message = f"นักเรียนมีพฤติกรรมปกติ (คะแนนล่าสุด {score}%) รักษามาตรฐานการเข้าเรียนและส่งงานได้ดีเยี่ยม"
 
-    # ========================================================
-    # 5. Prepare Graph Data (Graph Data) - Sorted Old -> New
     history_records = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('record_date')
     
     report_dates = []
@@ -736,7 +615,6 @@ def student_report(request, student_id):
         date_str = r.record_date.strftime('%d/%m')
         att_score = r.attendance_score if r.attendance_score else 0
         
-        # ปรับสูตรคำนวณกราฟให้ตรงกับคะแนนจริง (%)
         daily_data[date_str]['att'].append(att_score)
         daily_data[date_str]['quiz'].append(r.quiz_score)
         daily_data[date_str]['act'].append(r.activity_score)
@@ -752,9 +630,9 @@ def student_report(request, student_id):
     return render(request, 'management/student_report.html', {
         'student': student,
         'records': records,
-        'ai_status': ai_status,     # ✅ ส่งสถานะไปเปลี่ยนสีกล่อง
-        'ai_message': ai_message,   # ✅ ส่งข้อความวิเคราะห์ไปโชว์
-        'latest_rec': latest_rec,   # ✅ ส่งข้อมูลล่าสุดไปใช้อ้างอิง
+        'ai_status': ai_status,   
+        'ai_message': ai_message,   
+        'latest_rec': latest_rec,   
         'notes': notes,
         'contacts': contacts,
         'csv_scores': csv_scores,
@@ -771,14 +649,11 @@ def student_subject_detail(request, subject_name):
 
     try:
         student = StudentProfile.objects.get(user=request.user)
-        
-        # 1. ดึงข้อมูล
         all_records = BehaviorRecord.objects.filter(student=student).select_related('teacher', 'teacher__profile').order_by('-record_date')
         
         filtered_records = []
         subject_teacher = None
-        
-        # Config Map
+
         dept_map = {
             'math': 'คณิตศาสตร์', 'sci': 'วิทยาศาสตร์', 'eng': 'ภาษาต่างประเทศ',
             'thai': 'ภาษาไทย', 'soc': 'สังคมศึกษา', 'art': 'ศิลปะ',
@@ -789,7 +664,6 @@ def student_subject_detail(request, subject_name):
             'Teacher02': 'ภาษาต่างประเทศ',
         }
 
-        # Helper Function
         def get_subj(r):
             if not r.teacher: return 'วิชาทั่วไป'
             if r.teacher.username in manual_teacher_map:
@@ -808,19 +682,16 @@ def student_subject_detail(request, subject_name):
                 return db_sub
             return 'วิชาทั่วไป'
 
-        # 2. คัดกรอง
         for record in all_records:
             if get_subj(record) == subject_name:
                 filtered_records.append(record)
                 if not subject_teacher and record.teacher:
                     subject_teacher = record.teacher
 
-        # 3. คำนวณสถิติ
         count = len(filtered_records)
         avg_score = 0
         attendance_rate = 0
-        
-        # ✅ เพิ่มตัวแปรนับจำนวนครั้ง
+
         present_count = 0
         late_count = 0
         absent_count = 0
@@ -830,11 +701,9 @@ def student_subject_detail(request, subject_name):
         att_scores = []
 
         if count > 0:
-            # Quiz
             total_quiz = sum(r.quiz_score for r in filtered_records)
             avg_score = total_quiz / count
 
-            # Attendance (Original Logic - Percentage)
             total_att = sum(r.attendance_score for r in filtered_records)
             max_val = max((r.attendance_score for r in filtered_records), default=0)
             
@@ -848,11 +717,9 @@ def student_subject_detail(request, subject_name):
             max_possible = count * score_base
             attendance_rate = (total_att / max_possible) * 100 if max_possible > 0 else 0
             attendance_rate = min(100, attendance_rate)
-            
-            # ✅✅✅ Loop นับจำนวนครั้ง (เพิ่มใหม่) ✅✅✅
+
             for r in filtered_records:
                 score = r.attendance_score
-                # ปรับเกณฑ์ตรงนี้ได้ตามต้องการ (80-100=มาเรียน, 1-79=สาย, 0=ขาด)
                 if score >= 80:
                     present_count += 1
                 elif score > 0:
@@ -860,7 +727,6 @@ def student_subject_detail(request, subject_name):
                 else:
                     absent_count += 1
 
-            # กราฟ
             graph_data = filtered_records[:10][::-1]
             labels = [r.record_date.strftime('%d/%m') if r.record_date else '-' for r in graph_data]
             scores = [r.quiz_score for r in graph_data]
@@ -884,7 +750,6 @@ def student_subject_detail(request, subject_name):
         'records': filtered_records,
         'avg_score': avg_score,
         'attendance_rate': attendance_rate,
-        # ✅ ส่งตัวแปรนับจำนวนไปหน้าเว็บ
         'present_count': present_count,
         'late_count': late_count,
         'absent_count': absent_count,
@@ -897,11 +762,9 @@ def teacher_student_edit(request, student_id):
     student = get_object_or_404(StudentProfile, id=student_id)
     
     if request.method == "POST":
-        # แก้ไข Class Name
         student.class_name = request.POST.get('class_name')
         student.save()
-        
-        # ถ้าอยากแก้ Username หรือ Password ด้วย ต้องแก้ที่ตัว User
+
         new_username = request.POST.get('username')
         if new_username and new_username != student.user.username:
             if User.objects.filter(username=new_username).exists():
@@ -917,10 +780,8 @@ def teacher_student_edit(request, student_id):
 
 @login_required
 def teacher_student_remove(request, student_id):
-    # เปลี่ยนชื่อฟังก์ชันจาก _delete เป็น _remove
     student = get_object_or_404(StudentProfile, id=student_id)
     
-    # ✅ ใช้ .remove() เพื่อตัดความสัมพันธ์ โดยข้อมูลนักเรียนยังอยู่
     student.teachers.remove(request.user)
     
     messages.success(request, f"นำนักเรียน {student.user.username} ออกจากรายชื่อแล้ว")
@@ -933,7 +794,6 @@ def teacher_student_bulk_remove(request):
         if student_ids:
             students = StudentProfile.objects.filter(id__in=student_ids)
             for student in students:
-                # ✅ วนลูปนำออกทีละคน (Unlink)
                 student.teachers.remove(request.user)
                 
             messages.success(request, f"นำนักเรียนออก {len(student_ids)} คนเรียบร้อยแล้ว")
@@ -960,7 +820,6 @@ def student_import_csv_view(request):
             data = io.TextIOWrapper(csv_file.file, encoding="utf-8-sig")
             reader = csv.DictReader(data)
             
-            # ลบช่องว่างหัวตาราง (กันพลาด)
             if reader.fieldnames:
                 reader.fieldnames = [name.strip() for name in reader.fieldnames]
                 
@@ -972,7 +831,6 @@ def student_import_csv_view(request):
         updated_count = 0
         error_rows = []
 
-        # ฟังก์ชันแปลงวันที่
         def parse_date(date_str):
             if not date_str: return timezone.now().date()
             date_str = date_str.strip()
@@ -986,40 +844,30 @@ def student_import_csv_view(request):
             try: return float(val) if val else 0.0
             except ValueError: return 0.0
 
-        print("--- START IMPORT ---") # ดูใน Terminal
+        print("--- START IMPORT ---") 
         
         for index, row in enumerate(reader, start=1):
-            # 1. เช็คหัวตารางให้ชัวร์
             username = row.get("username", "").strip()
-            
-            # Debug: ถ้าหา username ไม่เจอ ให้ปริ้นท์บอก
+
             if not username:
                 print(f"Row {index}: ข้าม (ไม่พบ username ในไฟล์ CSV)")
-                # ลองเช็คว่า CSV ใช้ชื่ออื่นไหม?
                 if index == 1: print(f"Headers ที่พบ: {reader.fieldnames}") 
                 continue
 
             try:
-                # ==================================================
-                # ✅ แก้ไข Logic: สร้าง User ก่อน แล้วค่อยสร้าง Profile
-                # ==================================================
                 user_obj, _ = User.objects.get_or_create(username=username)
-                
-                # ถ้าอยากตั้งรหัสผ่าน Default ให้ทำตรงนี้ (Optional)
+
                 if not user_obj.password:
                     user_obj.set_password("123456") 
                     user_obj.save()
 
-                # หานักเรียนจาก User ที่ได้มา
                 s, created = StudentProfile.objects.get_or_create(
-                    user=user_obj, # ใส่เป็น Object
+                    user=user_obj, 
                     defaults={'class_name': row.get("class_name", "ไม่ระบุ").strip()}
                 )
-                
-                # Link ครู
+
                 s.teachers.add(request.user) 
 
-                # 2. บันทึกคะแนน (เหมือนเดิม)
                 r_date = parse_date(row.get("record_date"))
                 
                 obj, created = BehaviorRecord.objects.update_or_create(
@@ -1038,7 +886,7 @@ def student_import_csv_view(request):
                 else: updated_count += 1
 
             except Exception as e:
-                print(f"Error Row {index}: {e}") # ปริ้นท์ error ลง Terminal
+                print(f"Error Row {index}: {e}") 
                 error_rows.append(f"แถว {index} ({username}): {e}")
 
         messages.success(request, f"เสร็จสิ้น: เพิ่มใหม่ {created_count}, อัปเดต {updated_count}")
