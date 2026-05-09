@@ -26,7 +26,14 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
     path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
-    
+    path('dashboard/admin/', views.admin_dashboard, name='admin_dashboard'),
+    path('dashboard/admin/teachers/', views.manage_teachers, name='manage_teachers'),
+    path('dashboard/admin/students/', views.manage_students, name='manage_students'), 
+    path('manage/user/add/', views.add_user, name='add_user'),
+    path('manage/user/<int:user_id>/edit/', views.edit_user, name='edit_user'),
+    path('manage/user/<int:user_id>/delete/', views.delete_user, name='delete_user'),
+    path('manage/user/bulk-delete/', views.bulk_delete_users, name='bulk_delete_users'),
+
     path('students/', views.teacher_student_list, name='teacher_student_list'),
     path('students/import/', views.student_import_csv_view, name='teacher_student_import'),
     path('student/report/<str:student_id>/', views.student_report, name='student_report'),
@@ -40,6 +47,5 @@ urlpatterns = [
     path('students/<int:student_id>/edit/', views.teacher_student_edit, name='teacher_student_edit'),
     path('students/<int:student_id>/remove/', views.teacher_student_remove, name='teacher_student_remove'),
     path('students/bulk-remove/', views.teacher_student_bulk_remove, name='teacher_student_bulk_remove'),
-
-    path('students/import/', views.student_import_csv_view, name='teacher_student_import'),
+    
 ]

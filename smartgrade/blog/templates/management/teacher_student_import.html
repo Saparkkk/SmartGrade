@@ -115,17 +115,32 @@
         {% endif %}
       </form>
 
-      <div class="pt-4 border-t border-gray-200 text-xs text-gray-600 space-y-1">
-        <p class="font-semibold">รูปแบบ header ที่แนะนำ:</p>
-        <pre class="bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto text-[11px]">
-username,class_name,record_date,attendance_score,homework_done,quiz_score,activity_score
-s12345,ม.3/2,2025-06-15,10,1,15,20
-s12346,ม.3/2,2025-06-15,8,0,10,15
-        </pre>
-        <p>หมายเหตุ: <code>homework_done</code> ให้ใช้ 1 = ส่งแล้ว, 0 = ยังไม่ส่ง</p>
-      </div>
+      <div class="pt-4 border-t border-gray-200 text-xs text-gray-600 space-y-2">
+    <p class="font-semibold text-indigo-600">รูปแบบ Header ที่รองรับ (แนะนำตามนี้):</p>
+    <div class="bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto">
+        <code class="text-[10px] text-gray-700 leading-relaxed">
+            username, student_id, first_name, last_name, email, class_name, record_date, quiz_score, homework_done, activity_score, attendance_score
+        </code>
     </div>
-
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 bg-blue-50 p-3 rounded-xl border border-blue-100">
+        <div class="space-y-1">
+            <p class="font-bold text-blue-800">ข้อมูลบัญชี:</p>
+            <ul class="list-disc list-inside text-[11px] text-blue-700">
+                <li><span class="font-semibold">username:</span> ใช้รหัสนักเรียน (สำหรับเข้าระบบ)</li>
+                <li><span class="font-semibold">student_id:</span> รหัสนักเรียน (สำหรับแสดงผล)</li>
+                <li><span class="font-semibold">first_name / last_name:</span> ชื่อและนามสกุล</li>
+                <li><span class="font-semibold">email:</span> อีเมลของนักเรียน</li>
+            </ul>
+        </div>
+        <div class="space-y-1">
+            <p class="font-bold text-blue-800">ข้อมูลคะแนน:</p>
+            <ul class="list-disc list-inside text-[11px] text-blue-700">
+                <li><span class="font-semibold">homework_done:</span> 1 = ส่ง, 0 = ไม่ส่ง</li>
+                <li><span class="font-semibold">คะแนนอื่นๆ:</span> ใส่เป็นตัวเลข (0-100)</li>
+            </ul>
+        </div>
+    </div>
   </main>
 </body>
 </html>

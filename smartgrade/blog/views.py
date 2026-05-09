@@ -1,19 +1,133 @@
 import csv
 import io
+import json
 from urllib import request
+from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from .forms import RegisterForm, StudentProfileForm, TeacherProfileForm, BehaviorForm, FeedbackForm, PrivateNoteForm, ContactForm
+from .forms import RegisterForm, StudentProfileForm, TeacherProfileForm, BehaviorForm, FeedbackForm, PrivateNoteForm, ContactForm, UserCreationForm
 from .models import StudentProfile, BehaviorRecord, UserProfile, StudentProfile, StudentFeedback, PrivateNote, UrgentContact, StudentScore
 from django.db.models import Avg, Count, Q
 from django.contrib import messages
+from django import forms
 from .utils import auto_feedback, analyze_grade_trend
 from django.utils import timezone
 from collections import defaultdict
 from datetime import datetime
+
+def is_admin(user):
+    return user.is_superuser
+
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    # ดึงมาแค่ข้อมูลบัญชีตาม Use Case
+    teachers = User.objects.filter(is_staff=True, is_superuser=False)
+    students = User.objects.filter(is_staff=False)
+    total_users = teachers.count() + students.count()
+    
+    context = {
+        'teachers': teachers,
+        'students': students,
+        'total_users': total_users,
+    }
+    return render(request, 'admin/admin_dashboard.html', context)
+
+def manage_teachers(request):
+    # ดึงเฉพาะผู้ใช้ที่เป็น Staff แต่ไม่ใช่ Superuser (อาจารย์)
+    teachers = User.objects.filter(is_staff=True, is_superuser=False)
+    return render(request, 'admin/manage_teachers.html', {'teachers': teachers})
+
+def manage_students(request):
+    # ดึงเฉพาะผู้ใช้ที่ไม่ใช่ Staff (นักเรียน)
+    students = User.objects.filter(is_staff=False)
+    return render(request, 'admin/manage_students.html', {'students': students})
+
+def add_user(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            messages.success(request, f"สร้างบัญชี {user.username} สำเร็จแล้ว!")
+            return redirect('admin_dashboard')
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'admin/add_user.html', {'form': form})
+
+class EditUserForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email', 'is_active', 'is_staff']
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none'}),
+            'first_name': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none'}),
+            'last_name': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none'}),
+            'email': forms.EmailInput(attrs={'class': 'w-full px-4 py-2 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none'}),
+        }
+
+def edit_user(request, user_id):
+    user_to_edit = get_object_or_404(User, id=user_id)
+    
+    if request.method == 'POST':
+        form = EditUserForm(request.POST, instance=user_to_edit)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'อัปเดตข้อมูลสำเร็จแล้ว!')
+            # ถ้าเป็นอาจารย์ให้กลับไปหน้าจัดการอาจารย์ ถ้าเป็นนักเรียนให้ไปหน้าจัดการนักเรียน
+            if user_to_edit.is_staff:
+                return redirect('manage_teachers')
+            return redirect('manage_students')
+    else:
+        form = EditUserForm(instance=user_to_edit)
+        
+    return render(request, 'admin/edit_user.html', {
+        'form': form,
+        'user_to_edit': user_to_edit
+    })
+    
+def delete_user(request, user_id):
+    user_to_delete = get_object_or_404(User, id=user_id)
+    
+    # ป้องกันไม่ให้ Admin ลบตัวเอง
+    if request.user.id == user_to_delete.id:
+        messages.error(request, "คุณไม่สามารถลบบัญชีของตัวเองได้!")
+        return redirect('admin_dashboard')
+
+    is_staff = user_to_delete.is_staff
+    user_to_delete.delete()
+    messages.success(request, f"ลบบัญชี {user_to_delete.username} เรียบร้อยแล้ว")
+    
+    if is_staff:
+        return redirect('manage_teachers')
+    return redirect('manage_students')
+
+@require_POST
+@login_required
+def bulk_delete_users(request):
+    try:
+        # รับข้อมูล ID ที่ส่งมาจาก JavaScript (ส่งมาเป็น JSON)
+        data = json.loads(request.body)
+        user_ids = data.get('user_ids', [])
+        
+        if not user_ids:
+            return JsonResponse({'status': 'error', 'message': 'ไม่ได้เลือกรายการ'}, status=400)
+            
+        # กรองไม่ให้ลบตัวเอง
+        if request.user.id in user_ids:
+            user_ids.remove(request.user.id)
+            
+        # ลบ User ทั้งหมดที่อยู่ในลิสต์
+        deleted_count, _ = User.objects.filter(id__in=user_ids).delete()
+        
+        return JsonResponse({
+            'status': 'success', 
+            'message': f'ลบข้อมูลสำเร็จ {deleted_count} รายการ'
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def get_role_for_user(user):
     default_role = 'teacher' if user.is_staff else 'student'
@@ -817,6 +931,7 @@ def student_import_csv_view(request):
             return redirect("teacher_student_import")
 
         try:
+            # ใช้ utf-8-sig เพื่อรองรับไฟล์ CSV ที่เซฟจาก Excel (ป้องกันปัญหาภาษาไทยเพี้ยน)
             data = io.TextIOWrapper(csv_file.file, encoding="utf-8-sig")
             reader = csv.DictReader(data)
             
@@ -831,6 +946,7 @@ def student_import_csv_view(request):
         updated_count = 0
         error_rows = []
 
+        # Helper Functions
         def parse_date(date_str):
             if not date_str: return timezone.now().date()
             date_str = date_str.strip()
@@ -839,7 +955,7 @@ def student_import_csv_view(request):
                 except ValueError: continue
             return timezone.now().date()
 
-        def clean_int(val): return int(val) if val and val.strip().isdigit() else 0
+        def clean_int(val): return int(val) if val and str(val).strip().isdigit() else 0
         def clean_float(val):
             try: return float(val) if val else 0.0
             except ValueError: return 0.0
@@ -850,24 +966,35 @@ def student_import_csv_view(request):
             username = row.get("username", "").strip()
 
             if not username:
-                print(f"Row {index}: ข้าม (ไม่พบ username ในไฟล์ CSV)")
-                if index == 1: print(f"Headers ที่พบ: {reader.fieldnames}") 
                 continue
 
             try:
-                user_obj, _ = User.objects.get_or_create(username=username)
+                # --- 1. จัดการข้อมูล User (ชื่อ, นามสกุล, เมล) ---
+                user_obj, created_user = User.objects.get_or_create(username=username)
+                
+                # อัปเดตข้อมูลส่วนตัวจาก CSV
+                user_obj.first_name = row.get("first_name", "").strip()
+                user_obj.last_name = row.get("last_name", "").strip()
+                user_obj.email = row.get("email", "").strip()
 
-                if not user_obj.password:
-                    user_obj.set_password("123456") 
-                    user_obj.save()
+                if not user_obj.password or created_user:
+                    user_obj.set_password("123456") # รหัสผ่านเริ่มต้น
+                
+                user_obj.save()
 
-                s, created = StudentProfile.objects.get_or_create(
-                    user=user_obj, 
-                    defaults={'class_name': row.get("class_name", "ไม่ระบุ").strip()}
+                # --- 2. จัดการ StudentProfile (รหัสนักเรียน, ชั้นเรียน) ---
+                # เพิ่มรหัสนักเรียน (student_id) ลงไปใน defaults
+                s, created_profile = StudentProfile.objects.update_or_create(
+                    user=user_obj,
+                    defaults={
+                        'student_id': row.get("student_id", "").strip(),
+                        'class_name': row.get("class_name", "ไม่ระบุ").strip()
+                    }
                 )
 
                 s.teachers.add(request.user) 
 
+                # --- 3. บันทึกพฤติกรรม (BehaviorRecord) ---
                 r_date = parse_date(row.get("record_date"))
                 
                 obj, created = BehaviorRecord.objects.update_or_create(
@@ -876,7 +1003,7 @@ def student_import_csv_view(request):
                     teacher=request.user,
                     defaults={
                         'attendance_score': clean_int(row.get("attendance_score")),
-                        'homework_done': str(row.get("homework_done", "0")).strip() in ['1', 'True', 'true'],
+                        'homework_done': str(row.get("homework_done", "0")).strip().lower() in ['1', 'true', 'yes'],
                         'quiz_score': clean_float(row.get("quiz_score")),
                         'activity_score': clean_int(row.get("activity_score")),
                     }
@@ -889,9 +1016,9 @@ def student_import_csv_view(request):
                 print(f"Error Row {index}: {e}") 
                 error_rows.append(f"แถว {index} ({username}): {e}")
 
-        messages.success(request, f"เสร็จสิ้น: เพิ่มใหม่ {created_count}, อัปเดต {updated_count}")
+        messages.success(request, f"นำเข้าสำเร็จ: เพิ่มพฤติกรรมใหม่ {created_count}, อัปเดต {updated_count}")
         if error_rows:
-            messages.warning(request, f"มีข้อผิดพลาด: {error_rows[:3]}")
+            messages.warning(request, f"พบข้อผิดพลาดบางแถว: {error_rows[:3]}")
 
         return redirect("teacher_student_import")
     

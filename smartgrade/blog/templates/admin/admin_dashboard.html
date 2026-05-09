@@ -1,0 +1,221 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>SmartGrade Admin | Dashboard</title>
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+        .sidebar-item-active { background-color: #2563eb; color: white; box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.2); }
+    </style>
+</head>
+<body class="bg-[#f8fafc] antialiased">
+    <div class="flex min-h-screen">
+        <!-- Sidebar: ปรับโทนเข้มและ Font ให้ตรงธีม -->
+        <aside class="w-64 bg-[#0f172a] text-white p-6 shrink-0 shadow-2xl z-50">
+            <div class="mb-10 px-2">
+                <h1 class="text-2xl font-bold text-blue-400 tracking-tight">SmartGrade</h1>
+                <p class="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Management System</p>
+            </div>
+            <nav class="space-y-1.5">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl sidebar-item-active transition-all">
+                    <span class="text-lg">🏠</span> หน้าแรก
+                </a>
+                <a href="{% url 'manage_teachers' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
+                    <span class="text-lg group-hover:scale-110 transition-transform">👨‍🏫</span> จัดการอาจารย์
+                </a>   
+                <a href="{% url 'manage_students' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-white transition-all group">
+                    <span class="text-lg group-hover:scale-110 transition-transform">🎓</span> จัดการนักเรียน
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-10 overflow-y-auto">
+            <header class="flex justify-between items-end mb-10">
+                <div>
+                    <h2 class="text-3xl font-bold text-slate-800 tracking-tight">แผงควบคุมผู้ดูแลระบบ</h2>
+                    <p class="text-slate-500 mt-1">ภาพรวมบัญชีผู้ใช้งานทั้งหมดในระบบ <span class="text-blue-600 font-medium">SmartGrade</span></p>
+                </div>
+                <a href="{% url 'add_user' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-7 py-3.5 rounded-2xl transition-all shadow-lg shadow-blue-900/20 flex items-center gap-2 font-medium active:scale-95">
+                    <span class="text-xl">+</span> เพิ่มผู้ใช้ใหม่
+                </a>
+            </header>
+
+            <!-- Bulk Actions Bar -->
+            <div class="h-16 mb-4 flex items-center">
+                <div id="bulkActions" class="hidden flex items-center justify-between w-full bg-red-50 px-6 py-3 rounded-2xl border border-red-100 shadow-sm animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-red-500 w-2 h-2 rounded-full animate-ping"></div>
+                        <span class="text-red-700 font-semibold text-sm">เลือกอยู่ <span id="selectedCount" class="text-lg">0</span> รายการ</span>
+                    </div>
+                    <button onclick="openBulkDeleteModal()" class="bg-red-600 text-white px-6 py-2 rounded-xl text-sm font-bold hover:bg-red-700 transition shadow-md shadow-red-900/20 active:scale-95">
+                        ลบที่เลือกทั้งหมด
+                    </button>
+                </div>
+            </div>
+
+            <!-- Main Table Card -->
+            <div class="bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
+                <div class="p-8 border-b border-slate-50 flex justify-between items-center bg-white">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-blue-600 font-bold">
+                            List
+                        </div>
+                        <span class="font-bold text-slate-700 text-xl tracking-tight">บัญชีอาจารย์และนักเรียน</span>
+                    </div>
+                    <span class="text-xs font-semibold bg-slate-100 text-slate-500 px-4 py-2 rounded-full border border-slate-200">
+                        ทั้งหมด {{ total_users }} รายการ
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/50 text-slate-400 text-[11px] uppercase tracking-[0.15em] font-bold">
+                                <th class="px-8 py-5 w-10">
+                                    <input type="checkbox" id="selectAll" class="w-5 h-5 rounded-lg border-slate-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer">
+                                </th>
+                                <th class="px-8 py-5">ชื่อ-นามสกุล</th>
+                                <th class="px-8 py-5 text-center">ประเภท</th>
+                                <th class="px-8 py-5 text-right pr-12">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            <!-- อาจารย์ -->
+                            {% for user in teachers %}
+                            <tr class="hover:bg-blue-50/30 transition-all group">
+                                <td class="px-8 py-5">
+                                    <input type="checkbox" name="user_ids" value="{{ user.id }}" data-name="{{ user.first_name }}" class="user-checkbox w-5 h-5 rounded-lg border-slate-300 text-blue-600 transition-all cursor-pointer">
+                                </td>
+                                <td class="px-8 py-5">
+                                    <div class="font-semibold text-slate-700 group-hover:text-blue-700 transition-colors text-base">
+                                        {{ user.first_name }} {{ user.last_name }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5">ID: #{{ user.id|add:1000 }}</div>
+                                </td>
+                                <td class="px-8 py-5 text-center">
+                                    <span class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-100 text-blue-700 border border-blue-200">Teacher</span>
+                                </td>
+                                <td class="px-8 py-5 text-right pr-12 space-x-2">
+                                    <a href="{% url 'edit_user' user.id %}" class="inline-flex items-center px-5 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all duration-300">
+                                        แก้ไข
+                                    </a>
+                                    <button onclick="confirmQuickDelete('{{ user.id }}', '{{ user.first_name }}')" class="px-4 py-2 text-sm font-semibold text-red-400 hover:text-red-600 transition-colors">
+                                        ลบ
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                            <!-- นักเรียน -->
+                            {% for student in students %}
+                            <tr class="hover:bg-orange-50/30 transition-all group">
+                                <td class="px-8 py-5">
+                                    <input type="checkbox" name="user_ids" value="{{ student.id }}" data-name="{{ student.first_name }}" class="user-checkbox w-5 h-5 rounded-lg border-slate-300 text-orange-600 transition-all cursor-pointer">
+                                </td>
+                                <td class="px-8 py-5">
+                                    <div class="font-semibold text-slate-700 group-hover:text-orange-700 transition-colors text-base">
+                                        {{ student.first_name }} {{ student.last_name }}
+                                    </div>
+                                    <div class="text-[11px] text-slate-400 mt-0.5">ID: #{{ student.id|add:1000 }}</div>
+                                </td>
+                                <td class="px-8 py-5 text-center">
+                                    <span class="px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-700 border border-orange-200">Student</span>
+                                </td>
+                                <td class="px-8 py-5 text-right pr-12 space-x-2">
+                                    <a href="{% url 'edit_user' student.id %}" class="inline-flex items-center px-5 py-2 text-sm font-semibold text-blue-600 bg-blue-50 rounded-xl hover:bg-blue-600 hover:text-white hover:shadow-lg hover:shadow-blue-200 transition-all duration-300">
+                                        แก้ไข
+                                    </a>
+                                    <button onclick="confirmQuickDelete('{{ student.id }}', '{{ student.first_name }}')" class="px-4 py-2 text-sm font-semibold text-red-400 hover:text-red-600 transition-colors">
+                                        ลบ
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Modals: ปรับแต่งให้โค้งมนและธีมเข้ากัน -->
+            <div id="bulkDeleteModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all">
+                <div class="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full mx-4 text-center border border-slate-100">
+                    <div class="bg-red-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
+                        <span class="text-4xl">⚠️</span>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">ลบข้อมูลที่เลือก?</h3>
+                    <p class="text-slate-500 mb-10 text-sm leading-relaxed">คุณแน่ใจหรือไม่ที่จะลบบัญชีผู้ใช้งานทั้งหมดที่เลือกไว้? <br><span class="text-red-500 font-bold italic">การกระทำนี้กู้คืนไม่ได้</span></p>
+                    <div class="flex flex-col gap-3">
+                        <button onclick="executeBulkDelete()" class="w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-xl shadow-red-900/20 hover:bg-red-700 transition-all">ยืนยันลบทั้งหมด</button>
+                        <button onclick="closeBulkModal()" class="w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all">ยกเลิก</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="quickDeleteModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md transition-all">
+                <div class="bg-white p-10 rounded-[3rem] shadow-2xl max-w-sm w-full mx-4 text-center border border-slate-100">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2 font-kanit">ยืนยันการลบ?</h3>
+                    <p class="text-slate-500 mb-8 text-sm leading-relaxed italic">คุณกำลังจะลบบัญชีของ <br><span id="deleteTargetName" class="font-bold text-red-600 text-lg not-italic"></span></p>
+                    <div class="flex gap-3">
+                        <form id="quickDeleteForm" method="POST" class="flex-1">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full py-4 bg-red-600 text-white rounded-2xl font-bold shadow-xl shadow-red-900/20 hover:bg-red-700 transition-all">ยืนยันลบ</button>
+                        </form>
+                        <button onclick="closeQuickDelete()" class="flex-1 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all">ยกเลิก</button>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+                const selectAll = document.getElementById('selectAll');
+                const checkboxes = document.querySelectorAll('.user-checkbox');
+                const bulkActions = document.getElementById('bulkActions');
+                const selectedCount = document.getElementById('selectedCount');
+
+                selectAll.addEventListener('change', (e) => {
+                    checkboxes.forEach(cb => {
+                        cb.checked = e.target.checked;
+                        cb.closest('tr').classList.toggle('bg-blue-50/50', e.target.checked);
+                    });
+                    updateBulkUI();
+                });
+
+                checkboxes.forEach(cb => cb.addEventListener('change', () => {
+                    cb.closest('tr').classList.toggle('bg-blue-50/50', cb.checked);
+                    updateBulkUI();
+                }));
+
+                function updateBulkUI() {
+                    const checkedCount = document.querySelectorAll('.user-checkbox:checked').length;
+                    selectedCount.innerText = checkedCount;
+                    bulkActions.classList.toggle('hidden', checkedCount === 0);
+                }
+
+                function openBulkDeleteModal() { document.getElementById('bulkDeleteModal').classList.remove('hidden'); }
+                function closeBulkModal() { document.getElementById('bulkDeleteModal').classList.add('hidden'); }
+
+                async function executeBulkDelete() {
+                    const userIds = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
+                    const response = await fetch("{% url 'bulk_delete_users' %}", {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                        body: JSON.stringify({ user_ids: userIds })
+                    });
+                    if (response.ok) window.location.reload();
+                }
+
+                function confirmQuickDelete(id, name) {
+                    document.getElementById('deleteTargetName').innerText = name;
+                    document.getElementById('quickDeleteForm').action = `/manage/user/${id}/delete/`;
+                    document.getElementById('quickDeleteModal').classList.remove('hidden');
+                }
+                function closeQuickDelete() { document.getElementById('quickDeleteModal').classList.add('hidden'); }
+            </script>
+        </main>
+    </div>
+</body>
+</html>

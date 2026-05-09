@@ -1,0 +1,119 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Kanit', sans-serif; }</style>
+</head>
+<body class="bg-slate-50">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (ยกมาจากหน้า Dashboard) -->
+        <aside class="w-64 bg-[#1e293b] text-white p-6 shrink-0 shadow-xl">
+            <div class="mb-10 px-2"><h1 class="text-2xl font-bold text-blue-400">SmartGrade</h1></div>
+            <nav class="space-y-2">
+                <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl text-slate-400 hover:bg-slate-800">🏠 หน้าแรก</a>
+                <a href="{% url 'manage_teachers' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl {% if user_to_edit.is_staff %}bg-blue-600 text-white{% else %}text-slate-400 hover:bg-slate-800{% endif %}">👨‍🏫 จัดการอาจารย์</a>
+                <a href="{% url 'manage_students' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl {% if not user_to_edit.is_staff %}bg-blue-600 text-white{% else %}text-slate-400 hover:bg-slate-800{% endif %}">🎓 จัดการนักเรียน</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-10">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">แก้ไขข้อมูลผู้ใช้งาน</h2>
+                <p class="text-slate-500">กำลังแก้ไขบัญชีของ: <span class="text-blue-600 font-semibold">{{ user_to_edit.username }}</span></p>
+            </header>
+
+            <div class="max-w-4xl bg-white rounded-[2rem] shadow-sm border border-slate-100 overflow-hidden">
+                <form method="POST" class="p-8 space-y-6">
+                    {% csrf_token %}
+                    
+                    <!-- ส่วนข้อมูลทั่วไป -->
+                    <div class="grid grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-600">Username</label>
+                            {{ form.username }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-600">อีเมล</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-600">ชื่อจริง</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-semibold text-slate-600">นามสกุล</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <!-- ส่วนสิทธิ์การใช้งาน -->
+                    <div class="space-y-4">
+                        <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                            🛡️ สิทธิ์การใช้งานและการเข้าถึง
+                        </h3>
+                        <div class="flex gap-10 bg-slate-50 p-6 rounded-2xl">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                {{ form.is_active }}
+                                <span class="text-slate-700 font-medium">เปิดใช้งานบัญชี (Active)</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                {{ form.is_staff }}
+                                <span class="text-slate-700 font-medium">สิทธิ์อาจารย์/เจ้าหน้าที่ (Staff)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- ปุ่มกด -->
+                    <div class="flex justify-end gap-4 pt-6">
+                        <a href="javascript:history.back()" class="px-8 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition">ยกเลิก</a>
+                        <button type="submit" class="px-8 py-3 rounded-xl bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-900/20 transition">บันทึกการเปลี่ยนแปลง</button>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-10 border-t border-red-50 mt-10">
+                        <div>
+                            <h4 class="text-red-600 font-bold text-lg">พื้นที่อันตราย (Danger Zone)</h4>
+                            <p class="text-slate-500 text-sm">เมื่อลบแล้ว ข้อมูลทั้งหมดของผู้ใช้รายนี้จะหายไปและไม่สามารถกู้คืนได้</p>
+                        </div>
+                        <button type="button" onclick="toggleDeleteModal()" class="px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl hover:bg-red-600 hover:text-white transition-all font-medium">
+                            ลบบัญชีนี้
+                        </button>
+                    </div>
+                    <!-- Modal ยืนยันการลบ -->
+                    <div id="deleteModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+                        <div class="bg-white p-8 rounded-[2rem] shadow-2xl max-w-md w-full mx-4">
+                            <div class="text-center">
+                                <div class="bg-red-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <span class="text-3xl">⚠️</span>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-800 mb-2">ยืนยันการลบ?</h3>
+                                <p class="text-slate-500 mb-8">คุณแน่ใจหรือไม่ที่จะลบบัญชีของ <span class="font-bold text-red-600">{{ user_to_edit.username }}</span>? การกระทำนี้ไม่สามารถย้อนคืนได้</p>
+                                
+                                <div class="flex gap-3">
+                                    <button type="button" onclick="toggleDeleteModal()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-medium hover:bg-slate-200 transition">ยกเลิก</button>
+                                    <form action="{% url 'delete_user' user_to_edit.id %}" method="POST" class="flex-1">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-full py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 shadow-lg shadow-red-900/20 transition">ยืนยันลบ</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <script>
+                        function toggleDeleteModal() {
+                            const modal = document.getElementById('deleteModal');
+                            modal.classList.toggle('hidden');
+                        }
+                    </script>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
