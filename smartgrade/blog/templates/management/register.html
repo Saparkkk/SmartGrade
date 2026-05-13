@@ -1,19 +1,26 @@
 <!doctype html>
+<!-- โหลดสแตติกไฟล์ของ Django (เช่น CSS, รูปภาพ) -->
 {% load static %}
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <title>สมัครสมาชิก | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- โหลดไฟล์ CSS หลักของโปรเจกต์ -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <!-- โหลด Tailwind CSS ผ่าน CDN สำหรับใช้จัดหน้าตาเว็บ -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-  <!-- Header (เหมือนหน้า Login) -->
+  <!-- ========================================== -->
+  <!-- ส่วนแถบนำทางด้านบน (Header) -->
+  <!-- ========================================== -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+      
+      <!-- โลโก้และชื่อระบบ -->
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
                     flex items-center justify-center text-white font-bold shadow">
@@ -25,17 +32,24 @@
         </div>
       </div>
 
+      <!-- ป้ายกำกับบอกว่าหน้านี้คือหน้าอะไร (ซ่อนในมือถือ แสดงเฉพาะจอใหญ่) -->
       <span class="hidden md:flex text-xs px-3 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
         สมัครสมาชิกนักเรียน
       </span>
     </div>
   </header>
 
-  <!-- Main -->
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+  <!-- ========================================== -->
   <main class="flex-1 flex items-center justify-center px-4 py-10">
+    <!-- แบ่งเลย์เอาต์แบบ Grid เป็น 5 ส่วน สำหรับหน้าจอขนาด md ขึ้นไป -->
     <div class="w-full max-w-3xl grid gap-10 md:grid-cols-5">
 
-      <!-- Left small intro -->
+      <!-- ========================================== -->
+      <!-- คอลัมน์ซ้าย: ข้อความเชิญชวน (กินพื้นที่ 2 ส่วน) -->
+      <!-- ซ่อนในมือถือ (hidden) และแสดงในหน้าจอขนาด md ขึ้นไป (md:flex) -->
+      <!-- ========================================== -->
       <section class="hidden md:flex md:col-span-2 flex-col justify-center text-sm">
         <h2 class="text-xl font-semibold text-gray-900 mb-2">
           สร้างบัญชี SmartGrade
@@ -43,6 +57,7 @@
         <p class="text-gray-600 mb-4">
           สมัครสมาชิกเพื่อให้คุณสามารถดูสถานะการเรียนของตัวเอง และติดตามคำแนะนำจากคุณครูได้สะดวกขึ้น
         </p>
+        <!-- รายการข้อดีของการสมัครสมาชิก -->
         <ul class="space-y-2 text-gray-600">
           <li class="flex gap-2">
             <span class="mt-1 h-2 w-2 rounded-full bg-indigo-500"></span>
@@ -59,7 +74,9 @@
         </ul>
       </section>
 
-      <!-- Form card -->
+      <!-- ========================================== -->
+      <!-- คอลัมน์ขวา: ฟอร์มสมัครสมาชิก (กินพื้นที่ 3 ส่วน) -->
+      <!-- ========================================== -->
       <section class="md:col-span-3">
         <div class="bg-white border border-gray-200 rounded-2xl shadow-lg p-8">
 
@@ -68,11 +85,15 @@
           </h2>
 
           <form method="post" enctype="multipart/form-data" class="space-y-5">
+            <!-- Token ป้องกันการโจมตีแบบ CSRF (จำเป็นสำหรับการส่งฟอร์มใน Django) -->
             {% csrf_token %}
 
-            <!-- Username -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: Username -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">Username</label>
+              <!-- เช็คว่ามีข้อผิดพลาด (Errors) จากการกรอกฟิลด์นี้หรือไม่ ถ้ามีให้แสดงสีแดง -->
               {% if form.username.errors %}
                 <p class="text-xs text-red-500">{{ form.username.errors }}</p>
               {% endif %}
@@ -86,12 +107,15 @@
                        text-gray-800 text-sm shadow-sm
                        focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
               >
+              <!-- คำแนะนำเงื่อนไขการตั้ง Username -->
               <p class="text-[11px] text-gray-500">
                 Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
               </p>
             </div>
 
-            <!-- Email -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: Email -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">Email</label>
               {% if form.email.errors %}
@@ -109,7 +133,9 @@
               >
             </div>
 
-            <!-- First name -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: First name (ชื่อจริง) -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">First name</label>
               {% if form.first_name.errors %}
@@ -125,7 +151,9 @@
               >
             </div>
 
-            <!-- Last name -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: Last name (นามสกุล) -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">Last name</label>
               {% if form.last_name.errors %}
@@ -141,7 +169,9 @@
               >
             </div>
 
-            <!-- Password -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: Password (ตั้งรหัสผ่าน) -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">Password</label>
               {% if form.password1.errors %}
@@ -155,6 +185,7 @@
                        text-gray-800 text-sm shadow-sm
                        focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:border-indigo-500 transition"
               >
+              <!-- คำแนะนำเงื่อนไขการตั้งรหัสผ่านที่ปลอดภัย -->
               <ul class="list-disc ml-5 mt-2 text-[11px] text-gray-500 space-y-0.5">
                 <li>Your password can’t be too similar to your other personal information.</li>
                 <li>Your password must contain at least 8 characters.</li>
@@ -163,7 +194,9 @@
               </ul>
             </div>
 
-            <!-- Password confirmation -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: Password confirmation (ยืนยันรหัสผ่าน) -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">Password confirmation</label>
               {% if form.password2.errors %}
@@ -179,7 +212,9 @@
               >
             </div>
 
-            <!-- Class name -->
+            <!-- ============================== -->
+            <!-- ฟิลด์: Class name (ห้องเรียน) -->
+            <!-- ============================== -->
             <div class="space-y-1">
               <label class="block text-sm font-medium text-gray-700">Class name</label>
               {% if form.class_name.errors %}
@@ -196,7 +231,7 @@
               >
             </div>
 
-            <!-- Submit -->
+            <!-- ปุ่มยืนยันการสมัครสมาชิก -->
             <button
               type="submit"
               class="w-full mt-2 inline-flex items-center justify-center gap-2 
@@ -208,6 +243,7 @@
 
           </form>
 
+          <!-- ลิงก์สำหรับคนที่สมัครสมาชิกแล้วให้กลับไปหน้า Login -->
           <p class="mt-6 text-center text-sm text-gray-600">
             มีบัญชีแล้ว?
             <a href="{% url 'login' %}" class="text-indigo-600 font-medium hover:underline">

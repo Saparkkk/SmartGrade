@@ -1,3 +1,4 @@
+<!-- โหลดสแตติกไฟล์ของ Django (พวก CSS, JS, รูปภาพต่างๆ) -->
 {% load static %}
 <!doctype html>
 <html lang="th">
@@ -5,14 +6,21 @@
   <meta charset="utf-8">
   <title>ข้อมูลส่วนตัว | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- โหลด Tailwind CSS เพื่อใช้สำหรับตกแต่งหน้าเว็บ -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- โหลดไฟล์ CSS หลักของโปรเจกต์ -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 
 <body class="min-h-screen bg-gray-50/50 text-slate-800">
 
+<!-- ========================================== -->
+<!-- ส่วนแถบด้านบน (Header / Navbar) แบบติดหนึบ (sticky) -->
+<!-- ========================================== -->
 <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-30">
   <div class="max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+    
+    <!-- โลโก้และชื่อระบบ -->
     <div class="flex items-center gap-3">
       <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center text-white font-bold">
         SG
@@ -23,11 +31,13 @@
       </div>
     </div>
 
+    <!-- ปุ่มนำทางด้านขวา (กลับหน้าหลัก และแก้ไขข้อมูล) -->
     <div class="flex gap-3">
         <a href="{% url 'dashboard' %}"
            class="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-medium hover:bg-gray-50 transition">
           กลับแดชบอร์ด
         </a>
+        <!-- ปุ่มแก้ไขข้อมูลจะซ่อนในมือถือ (hidden) และแสดงตั้งแต่หน้าจอขนาด sm ขึ้นไป (sm:inline-flex) -->
         <a href="{% url 'profile_edit' %}"
            class="hidden sm:inline-flex items-center px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-medium hover:bg-indigo-700 shadow-md shadow-indigo-500/20 transition">
           ✏️ แก้ไขข้อมูล
@@ -36,21 +46,32 @@
   </div>
 </header>
 
+<!-- ========================================== -->
+<!-- ส่วนเนื้อหาหลักของโปรไฟล์ -->
+<!-- ========================================== -->
 <main class="max-w-6xl mx-auto px-4 md:px-6 py-8">
 
+    <!-- แบ่งเลย์เอาต์เป็น Grid: จอใหญ่แบ่งเป็น 3 ส่วน (ซ้าย 1 ส่วน, ขวา 2 ส่วน) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
+        <!-- ========================================== -->
+        <!-- คอลัมน์ซ้าย (ข้อมูลส่วนตัวแบบย่อ และรูปโปรไฟล์) -->
+        <!-- ========================================== -->
         <div class="lg:col-span-1 space-y-6">
             
+            <!-- การ์ดแสดงรูปโปรไฟล์และชื่อ -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
                 <div class="relative w-32 h-32 mx-auto mb-4">
                     <div class="w-full h-full rounded-full border-4 border-indigo-50 shadow-inner overflow-hidden">
+                        <!-- เช็คว่าผู้ใช้มีรูปโปรไฟล์หรือไม่ ถ้ามีให้แสดงรูป ถ้าไม่มีให้ดึงรูป avatar อัตโนมัติจากชื่อ -->
                         {% if user_profile.profile_image %}
                             <img src="{{ user_profile.profile_image.url }}" class="w-full h-full object-cover">
                         {% else %}
                             <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=6366f1&color=fff&size=128" class="w-full h-full object-cover">
                         {% endif %}
                     </div>
+                    
+                    <!-- ป้ายกำกับบอกสถานะ (Teacher หรือ Student) ซ้อนทับบนรูปมุมขวาล่าง -->
                     <div class="absolute bottom-0 right-0 transform translate-x-1/4">
                          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow-sm border-2 border-white
                             {% if role == 'teacher' %}bg-indigo-600 text-white{% else %}bg-emerald-500 text-white{% endif %}">
@@ -59,6 +80,7 @@
                     </div>
                 </div>
 
+                <!-- แสดงชื่อ-นามสกุล และชื่อเล่น -->
                 <h2 class="text-xl font-bold text-gray-900 mt-2">
                     {{ request.user.first_name }} {{ request.user.last_name }}
                 </h2>
@@ -69,10 +91,12 @@
                     </p>
                 {% endif %}
                 
+                <!-- แสดง Username (ไอดีสำหรับเข้าสู่ระบบ) -->
                 <p class="text-xs text-gray-400 mt-2">@{{ request.user.username }}</p>
 
                 <div class="h-px bg-gray-100 my-4 w-3/4 mx-auto"></div>
 
+                <!-- ส่วนแสดงประวัติย่อ (Bio) -->
                 <div class="text-sm text-gray-600 leading-relaxed px-2">
                     {% if user_profile.bio %}
                         "{{ user_profile.bio }}"
@@ -82,9 +106,11 @@
                 </div>
             </div>
 
+            <!-- การ์ดแสดงสถานะและปีที่เข้าร่วม -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
                 <div class="grid grid-cols-2 divide-x divide-gray-100 text-center">
                     <div>
+                        <!-- ถ้าเป็นครูให้แสดง Active ถ้าเป็นนักเรียนให้แสดงห้องเรียน -->
                         <div class="text-2xl font-bold text-gray-800">
                              {% if role == 'teacher' %}Active{% else %}{{ user_profile.class_name|default:"-" }}{% endif %}
                         </div>
@@ -93,12 +119,14 @@
                         </div>
                     </div>
                     <div>
+                        <!-- แสดงปีที่สมัครสมาชิกเข้าระบบ -->
                         <div class="text-2xl font-bold text-gray-800">{{ request.user.date_joined|date:"Y" }}</div>
                         <div class="text-[10px] text-gray-400 uppercase tracking-wide mt-1">Since</div>
                     </div>
                 </div>
             </div>
 
+            <!-- ปุ่มแก้ไขข้อมูลสำหรับหน้าจอมือถือ (แสดงเฉพาะหน้าจอเล็ก) -->
             <div class="sm:hidden">
                 <a href="{% url 'profile_edit' %}" class="block w-full py-3 text-center bg-indigo-600 text-white rounded-xl font-medium shadow-sm">
                     แก้ไขข้อมูล
@@ -106,15 +134,22 @@
             </div>
         </div>
 
+        <!-- ========================================== -->
+        <!-- คอลัมน์ขวา (ข้อมูลเชิงลึก ทางวิชาการและการติดต่อ) -->
+        <!-- ========================================== -->
         <div class="lg:col-span-2 space-y-6">
             
+            <!-- การ์ดข้อมูลทางวิชาการ -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
                     <span class="text-lg">🎓</span>
                     <h3 class="font-bold text-gray-900 text-sm md:text-base">ข้อมูลทางวิชาการ</h3>
                 </div>
                 <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-4">
+                    
+                    <!-- เช็คเงื่อนไขว่าเป็นครูหรือนักเรียน เพื่อดึงข้อมูลมาแสดงให้ตรงบริบท -->
                     {% if role == 'teacher' %}
+                        <!-- สำหรับครู: แสดงกลุ่มสาระฯ และตำแหน่ง -->
                         <div>
                             <p class="text-xs text-gray-500 mb-1">กลุ่มสาระการเรียนรู้</p>
                             <p class="font-medium text-gray-900 text-lg">
@@ -128,6 +163,7 @@
                             </p>
                         </div>
                     {% else %}
+                        <!-- สำหรับนักเรียน: แสดงระดับชั้นและห้อง -->
                         <div>
                             <p class="text-xs text-gray-500 mb-1">ระดับชั้น / ห้อง</p>
                             <p class="font-medium text-gray-900 text-lg">
@@ -136,6 +172,7 @@
                         </div>
                     {% endif %}
                     
+                    <!-- ส่วนรหัสประจำตัว (แสดงทั้งครูและนักเรียน) -->
                     <div class="md:col-span-2">
                         <p class="text-xs text-gray-500 mb-1">{% if role == 'teacher' %}รหัสบุคลากร{% else %}รหัสนักเรียน{% endif %}</p>
                         <div class="inline-flex items-center px-2.5 py-1 rounded bg-gray-100 text-gray-600 text-sm font-mono">
@@ -145,12 +182,15 @@
                 </div>
             </div>
 
+            <!-- การ์ดช่องทางการติดต่อ -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
                     <span class="text-lg">📞</span>
                     <h3 class="font-bold text-gray-900 text-sm md:text-base">ช่องทางการติดต่อ</h3>
                 </div>
                 <div class="p-6 space-y-5">
+                    
+                    <!-- อีเมล -->
                     <div class="flex items-center gap-4 group">
                         <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition">
                             📧
@@ -161,6 +201,7 @@
                         </div>
                     </div>
 
+                    <!-- เบอร์โทรศัพท์ -->
                     <div class="flex items-center gap-4 group">
                         <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:bg-indigo-100 transition">
                             📱
@@ -173,6 +214,7 @@
                         </div>
                     </div>
 
+                    <!-- Line ID (แสดงเฉพาะครูเท่านั้น) -->
                     {% if role == 'teacher' %}
                     <div class="flex items-center gap-4 group">
                         <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center shrink-0 group-hover:bg-green-100 transition">
@@ -189,6 +231,7 @@
                 </div>
             </div>
 
+            <!-- การ์ดความปลอดภัย (เปลี่ยนรหัสผ่าน) -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-2 bg-gray-50/50">
                     <span class="text-lg">🔒</span>
@@ -197,8 +240,10 @@
                 <div class="p-6 flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-900">รหัสผ่าน</p>
+                        <!-- ซ่อนรหัสผ่านไว้เพื่อความปลอดภัย -->
                         <p class="text-xs text-gray-500 mt-0.5">****************</p>
                     </div>
+                    <!-- ปุ่มสำหรับให้ผู้ใช้กดไปหน้าเปลี่ยนรหัสผ่าน -->
                     <button class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-50 transition">
                         เปลี่ยนรหัสผ่าน
                     </button>

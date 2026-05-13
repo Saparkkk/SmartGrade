@@ -1,19 +1,31 @@
 <!DOCTYPE html>
+<!-- โหลด static ไฟล์ของระบบ Django -->
 {% load static %}
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <title>รายงานพฤติกรรมรายบุคคล | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- โหลด Tailwind CSS ผ่าน CDN สำหรับใช้จัดสไตล์ -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- โหลดไลบรารี Chart.js สำหรับการสร้างกราฟแสดงพัฒนาการ -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- โหลดฟอนต์ Sarabun จาก Google Fonts เพื่อให้อ่านภาษาไทยได้สวยงาม -->
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <style>
+      /* ตั้งค่าให้ทั้งหน้าเว็บใช้ฟอนต์ Sarabun */
       body { font-family: 'Sarabun', sans-serif; }
+      
+      /* CSS สำหรับตอนสั่งปริ้นท์ (Ctrl+P) คลาส .no-print จะถูกซ่อนไว้ไม่ให้ปรินท์ออกมา */
       @media print {
         .no-print { display: none !important; }
       }
-      /* Custom Scrollbar for notes */
+      
+      /* ปรับแต่ง Scrollbar สำหรับกล่องแสดงโน้ตให้ดูสะอาดตา */
       .custom-scrollbar::-webkit-scrollbar { width: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
       .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -22,8 +34,13 @@
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
+  <!-- ========================================== -->
+  <!-- แถบเมนูด้านบน (Header) จะถูกซ่อนเมื่อสั่งพิมพ์รายงาน (no-print) -->
+  <!-- ========================================== -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-20 no-print">
     <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+        
+        <!-- โลโก้และชื่อระบบ -->
         <div class="flex items-center gap-3">
             <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 flex items-center justify-center text-white font-bold shadow">SG</div>
             <div>
@@ -32,11 +49,13 @@
             </div>
         </div>
 
+        <!-- ปุ่ม Action ต่างๆ ด้านขวา -->
         <div class="flex items-center gap-3">
             <a href="{% url 'student_dashboard' %}" 
                class="px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 text-xs hover:bg-slate-200 transition">
                กลับแดชบอร์ด
             </a>
+            <!-- ลิงก์ไปดูโปรไฟล์เต็มของนักเรียนคนนี้ -->
             <a href="{% url 'teacher_student_detail' student.id %}" 
                class="px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 text-sm font-medium hover:bg-indigo-100 transition shadow-sm flex items-center gap-2">
                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -44,6 +63,7 @@
                </svg>
                <span class="hidden sm:inline">ดูโปรไฟล์</span>
             </a>
+            <!-- ปุ่มสั่งพิมพ์ (เรียกใช้ฟังก์ชัน window.print() ของเบราว์เซอร์) -->
             <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow transition flex items-center gap-2">
                 🖨️ พิมพ์รายงาน
             </button>
@@ -51,8 +71,12 @@
     </div>
   </header>
 
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก -->
+  <!-- ========================================== -->
   <main class="flex-1 max-w-7xl mx-auto px-4 py-8 w-full space-y-6">
 
+    <!-- ส่วนหัวของรายงาน: แสดงชื่อนักเรียนและวันที่พิมพ์ -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-2">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">
@@ -64,15 +88,22 @@
             </p>
         </div>
         <div class="text-right text-sm text-gray-400">
+            <!-- ดึงวันที่ปัจจุบันมาแสดงผล -->
             วันที่ออกรายงาน: {% now "d F Y" %}
         </div>
     </div>
 
+    <!-- แบ่งเลย์เอาต์เป็น 3 ส่วน (ซ้าย 2 ส่วน, ขวา 1 ส่วน) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
+        <!-- ========================================== -->
+        <!-- คอลัมน์ซ้าย (เนื้อหาหลัก): ข้อความ AI, กราฟ และ ตารางประวัติ -->
+        <!-- ========================================== -->
         <div class="lg:col-span-2 space-y-6">
             
+            <!-- กล่องแสดงข้อความวิเคราะห์จาก AI (แสดงเมื่อมีบันทึกล่าสุด) -->
             {% if latest_rec %}
+            <!-- การเปลี่ยนสีกล่องตามระดับสถานะที่ AI ประเมินมา (normal=เขียว, critical=แดง, อื่นๆ=เหลือง) -->
             <div class="rounded-2xl border p-6 flex items-start gap-4 shadow-sm
                 {% if ai_status == 'normal' %} bg-emerald-50 border-emerald-200 text-emerald-800
                 {% elif ai_status == 'critical' %} bg-red-50 border-red-200 text-red-800
@@ -90,18 +121,22 @@
             </div>
             {% endif %}
 
+            <!-- กราฟเส้นสรุปพัฒนาการรายสัปดาห์ -->
             <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-6">
                 <h2 class="text-lg font-bold text-gray-900 mb-6 border-b border-gray-100 pb-2 flex items-center gap-2">
                     📈 สรุปพัฒนาการรายสัปดาห์ (Weekly Trend)
                 </h2>
+                <!-- พื้นที่สำหรับให้ Chart.js นำกราฟมาวาด (ดู script ด้านล่าง) -->
                 <div class="relative h-80 w-full">
                     <canvas id="weeklyReportChart"></canvas>
                 </div>
             </div>
 
+            <!-- ตารางแสดงประวัติการบันทึกพฤติกรรม -->
             <div class="bg-white border border-gray-200 rounded-2xl shadow-md overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-900">ประวัติการบันทึก (History)</h2>
+                    <!-- แสดงจำนวนรายการบันทึกทั้งหมด -->
                     <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded border">{{ records|length }} รายการ</span>
                 </div>
                 
@@ -117,11 +152,13 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-gray-600">
+                            <!-- ลูปแสดงข้อมูลการบันทึกแต่ละรายการ -->
                             {% for r in records %}
                             <tr class="hover:bg-gray-50 transition">
                                 <td class="px-6 py-3 font-medium text-gray-900">
                                     {{ r.record_date|date:"d/m/Y" }}
                                 </td>
+                                <!-- เช็คคะแนนการเข้าเรียนเพื่อแสดงป้ายกำกับ (Badge) สภาพการมาเรียน -->
                                 <td class="px-6 py-3 text-center">
                                     {% if r.attendance_score >= 80 %}
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">มาเรียน</span>
@@ -131,6 +168,7 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">ขาดเรียน</span>
                                     {% endif %}
                                 </td>
+                                <!-- เช็คสถานะส่งการบ้าน -->
                                 <td class="px-6 py-3 text-center">
                                     {% if r.homework_done %}
                                         <span class="text-emerald-600">✔ ส่งแล้ว</span>
@@ -153,15 +191,23 @@
 
         </div>
 
+        <!-- ========================================== -->
+        <!-- คอลัมน์ขวา (Sidebar): เพิ่มโน้ตและเพิ่มบันทึกติดต่อด่วน -->
+        <!-- แถบนี้จะถูกซ่อนไว้เมื่อสั่งพิมพ์ (no-print) -->
+        <!-- ========================================== -->
         <div class="space-y-6 lg:col-span-1 no-print">
             
+            <!-- ฟอร์มและกล่องรายการ "บันทึกโน้ตส่วนตัว" -->
+            <!-- ใช้ sticky top-24 เพื่อให้กล่องลอยตามเมื่อเลื่อนจอลง -->
             <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 sticky top-24">
                 <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-2 border-b border-gray-100">
                     📝 บันทึกโน้ตส่วนตัว
                 </h3>
                 
+                <!-- ฟอร์มสร้างโน้ตใหม่ -->
                 <form method="post" class="mb-6">
                     {% csrf_token %}
+                    <!-- ตัวแปรลับบอก Backend ว่าฟอร์มนี้คือการทำคำสั่ง add_note -->
                     <input type="hidden" name="action" value="add_note">
                     <input type="hidden" name="note_type" value="general">
                     
@@ -180,6 +226,7 @@
                     </div>
                 </form>
 
+                <!-- รายการโน้ตเก่าที่เคยบันทึกไว้ (มีแถบเลื่อนเมื่อเนื้อหาเยอะเกิน 200px) -->
                 <div class="border-t border-gray-100 pt-4">
                     <h4 class="text-xs font-bold text-gray-400 uppercase mb-3 tracking-wide">ประวัติโน้ต ({{ notes|length }})</h4>
                     
@@ -207,15 +254,19 @@
                 </div>
             </div>
 
+            <!-- ฟอร์ม "บันทึกการติดต่อด่วน" -->
+            <!-- sticky ให้อยู่ใต้กล่องด้านบน (top-550px) -->
             <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 sticky top-[550px]">
                 <h3 class="text-base font-bold text-gray-900 mb-4 flex items-center gap-2 pb-2 border-b border-gray-100">
                     📞 บันทึกการติดต่อด่วน
                 </h3>
                 <form method="post">
                     {% csrf_token %}
+                    <!-- ตัวแปรลับบอก Backend ว่าฟอร์มนี้คือการทำคำสั่ง add_contact -->
                     <input type="hidden" name="action" value="add_contact">
                     <div class="space-y-3">
                         <div class="grid grid-cols-2 gap-3">
+                            <!-- Dropdown เลือกกลุ่มเป้าหมาย -->
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">ติดต่อใคร</label>
                                 <select name="target" class="w-full border border-gray-300 rounded-lg px-2 py-2 outline-none text-sm bg-white">
@@ -224,6 +275,7 @@
                                     <option value="other">อื่นๆ</option>
                                 </select>
                             </div>
+                            <!-- Dropdown เลือกช่องทาง -->
                             <div>
                                 <label class="block text-xs font-medium text-gray-500 mb-1">ช่องทาง</label>
                                 <select name="method" class="w-full border border-gray-300 rounded-lg px-2 py-2 outline-none text-sm bg-white">
@@ -250,64 +302,69 @@
 
   </main>
 
+  <!-- ========================================== -->
+  <!-- ส่วนของ JavaScript เพื่อสร้างกราฟพัฒนาการ -->
+  <!-- ========================================== -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // ดึงข้อมูลตัวแปรมาจาก View ของ Django และแทรก (safe) เพื่อให้ใช้ใน JS ได้
         const dates = {{ report_dates|safe }};
         const attendanceData = {{ report_attendance|safe }};
         const quizData = {{ report_quiz|safe }};
         const activityData = {{ report_activity|safe }};
 
+        // เรียก Canvas ที่ระบุด้วย id='weeklyReportChart'
         const ctx = document.getElementById('weeklyReportChart').getContext('2d');
         
         new Chart(ctx, {
-            type: 'line',
+            type: 'line', // รูปแบบกราฟเส้น
             data: {
-                labels: dates,
+                labels: dates, // แกน X คือวันที่
                 datasets: [
                     {
                         label: 'การเข้าเรียน (%)',
                         data: attendanceData,
-                        borderColor: '#10b981', 
+                        borderColor: '#10b981', // สีเขียว
                         backgroundColor: '#10b981',
                         borderWidth: 3,
-                        tension: 0.3,
+                        tension: 0.3, // ทำให้เส้นกราฟโค้งมนเล็กน้อย
                         fill: false,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        yAxisID: 'y'
+                        yAxisID: 'y' // อ้างอิงแกน Y ทางซ้ายมือ
                     },
                     {
                         label: 'คะแนน Quiz',
                         data: quizData,
-                        borderColor: '#6366f1', 
+                        borderColor: '#6366f1', // สีม่วงอมน้ำเงิน
                         backgroundColor: '#6366f1',
                         borderWidth: 3,
                         tension: 0.3,
                         fill: false,
                         pointRadius: 4,
                         pointHoverRadius: 6,
-                        yAxisID: 'y1'
+                        yAxisID: 'y1' // อ้างอิงแกน Y ทางขวามือ
                     },
                     {
                         label: 'คะแนนกิจกรรม',
                         data: activityData,
-                        borderColor: '#f59e0b', 
+                        borderColor: '#f59e0b', // สีเหลืองอำพัน
                         backgroundColor: '#f59e0b',
                         borderWidth: 2,
-                        borderDash: [5, 5], 
+                        borderDash: [5, 5], // ทำให้เป็นเส้นประ
                         tension: 0.3,
                         fill: false,
                         pointRadius: 4,
-                        yAxisID: 'y1'
+                        yAxisID: 'y1' // อ้างอิงแกน Y ทางขวามือ
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
+                maintainAspectRatio: false, // ปล่อยให้กราฟยืดหดตามคอนเทนเนอร์แม่
                 interaction: {
                     mode: 'index',
-                    intersect: false,
+                    intersect: false, // เอาเมาส์ชี้เพื่อดูข้อมูลทั้งหมดที่แกน X นั้นพร้อมกันได้
                 },
                 scales: {
                     x: {
@@ -317,7 +374,7 @@
                     y: { 
                         type: 'linear',
                         display: true,
-                        position: 'left',
+                        position: 'left', // แกน Y ตัวที่ 1 ฝั่งซ้าย (สำหรับดู %)
                         min: 0,
                         max: 100,
                         title: { display: true, text: 'เปอร์เซ็นต์ (%)' },
@@ -326,7 +383,7 @@
                     y1: { 
                         type: 'linear',
                         display: true,
-                        position: 'right',
+                        position: 'right', // แกน Y ตัวที่ 2 ฝั่งขวา (สำหรับดูคะแนน)
                         suggestedMax: 20, 
                         grid: { display: false },
                         title: { display: true, text: 'คะแนน (Points)' }
@@ -334,7 +391,7 @@
                 },
                 plugins: {
                     legend: {
-                        position: 'top',
+                        position: 'top', // วางตำแหน่งคำอธิบายสีกราฟไว้ด้านบน
                         labels: { usePointStyle: true, boxWidth: 8, padding: 20 }
                     }
                 }

@@ -1,3 +1,4 @@
+<!-- โหลดสแตติกไฟล์ของ Django สำหรับดึงพวก CSS, รูปภาพ -->
 {% load static %}
 <!doctype html>
 <html lang="th">
@@ -5,14 +6,21 @@
   <meta charset="utf-8">
   <title>แก้ไขโปรไฟล์ | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- โหลด Tailwind CSS ผ่าน CDN สำหรับใช้จัดสไตล์ UI -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- โหลดไฟล์ CSS หลักของระบบ -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 
 <body class="bg-gray-50 min-h-screen font-sans text-gray-600">
 
+<!-- ========================================== -->
+<!-- แถบนำทางด้านบน (Header) -->
+<!-- ========================================== -->
 <header class="bg-white border-b border-gray-200 shadow-sm">
   <div class="max-w-5xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
+    
+    <!-- โลโก้และชื่อระบบ -->
     <div class="flex items-center gap-3">
       <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center text-white font-bold">
         SG
@@ -23,6 +31,7 @@
       </div>
     </div>
 
+    <!-- ปุ่มกลับไปหน้าโปรไฟล์หลัก -->
     <a href="{% url 'profile' %}"
        class="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 transition">
       ← กลับไปหน้าโปรไฟล์
@@ -30,8 +39,12 @@
   </div>
 </header>
 
+<!-- ========================================== -->
+<!-- ส่วนเนื้อหาหลักของการแก้ไขโปรไฟล์ -->
+<!-- ========================================== -->
 <main class="max-w-4xl mx-auto px-4 md:px-6 py-8">
   
+  <!-- หัวข้อหน้าเว็บ (เช็คว่าเป็นครูหรือนักเรียนเพื่อแสดงข้อความที่เหมาะสม) -->
   <div class="mb-6">
     <h1 class="text-2xl font-bold text-gray-900">
       {% if role == 'teacher' %}แก้ไขข้อมูลครู{% else %}แก้ไขข้อมูลนักเรียน{% endif %}
@@ -39,9 +52,11 @@
     <p class="text-sm text-gray-500 mt-1">อัปเดตข้อมูลส่วนตัวและรูปภาพโปรไฟล์ของคุณ</p>
   </div>
 
+  <!-- ส่วนแสดงข้อความแจ้งเตือน (Alerts) เช่น บันทึกสำเร็จ หรือเกิดข้อผิดพลาด -->
   {% if messages %}
     <div class="mb-6 space-y-2">
       {% for m in messages %}
+        <!-- เปลี่ยนสีพื้นหลังตามประเภทของข้อความ (สีแดง=error, สีเขียว=success) -->
         <div class="flex items-center gap-2 px-4 py-3 rounded-xl {% if m.tags == 'error' %}bg-red-50 text-red-700 border border-red-200{% else %}bg-emerald-50 text-emerald-700 border border-emerald-200{% endif %} text-sm">
            <span>{% if m.tags == 'error' %}⚠️{% else %}✅{% endif %}</span>
            {{ m }}
@@ -50,9 +65,14 @@
     </div>
   {% endif %}
 
+  <!-- ฟอร์มแก้ไขข้อมูล (ต้องมี enctype="multipart/form-data" เพราะมีการอัปโหลดรูปภาพ) -->
   <form method="post" enctype="multipart/form-data" class="space-y-6">
+    <!-- Token ป้องกันการโจมตีแบบ CSRF (บังคับมีในฟอร์ม Django) -->
     {% csrf_token %}
 
+    <!-- ========================================== -->
+    <!-- ส่วนที่ 1: ข้อมูลทั่วไป (รูปโปรไฟล์, ชื่อ, นามสกุล, ประวัติ) -->
+    <!-- ========================================== -->
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
         <h3 class="font-semibold text-gray-900">ข้อมูลทั่วไป</h3>
@@ -62,35 +82,44 @@
       <div class="p-6 md:p-8">
         <div class="flex flex-col md:flex-row gap-8 items-start">
           
+          <!-- ส่วนอัปโหลดรูปโปรไฟล์ (เมื่อคลิกที่รูปจะไปกระตุ้น input file ที่ซ่อนอยู่) -->
           <div class="flex flex-col items-center gap-3 shrink-0">
              <div class="relative group cursor-pointer" onclick="document.getElementById('file-upload').click()">
                 <div class="w-28 h-28 rounded-full border-4 border-white shadow-lg overflow-hidden bg-gray-100 relative">
+                  <!-- เช็คว่ามีรูปเดิมไหม ถ้ามีให้แสดง ถ้าไม่มีใช้รูปจำลองจากชื่อ -->
                   {% if user_profile.profile_image %}
                     <img id="avatar-preview" src="{{ user_profile.profile_image.url }}" class="w-full h-full object-cover">
                   {% else %}
                     <img id="avatar-preview" src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=6366f1&color=fff" class="w-full h-full object-cover">
                   {% endif %}
+                  <!-- แผ่นกรองสีดำตอนเอาเมาส์ชี้ (Hover effect) -->
                   <div class="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <span class="text-white text-xs">เปลี่ยนรูป</span>
                   </div>
                 </div>
+                <!-- ไอคอนรูปดินสอ -->
                 <div class="absolute bottom-0 right-0 bg-white rounded-full p-1.5 shadow-md border border-gray-100 text-indigo-600">
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path></svg>
                 </div>
              </div>
              <p class="text-xs text-gray-500">คลิกที่รูปเพื่ออัปโหลด</p>
+             <!-- Input รับไฟล์ที่ถูกซ่อนไว้ (ใช้ JS ผูกกับรูปภาพด้านบนแทน) -->
              <input id="file-upload" type="file" name="profile_image" accept="image/*" class="hidden" onchange="previewImage(event)">
           </div>
 
+          <!-- ฟอร์มกรอกข้อมูลส่วนบุคคล -->
           <div class="flex-1 w-full space-y-5">
               <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- ชื่อจริง -->
                 <div>
                    <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อจริง <span class="text-red-500">*</span></label>
+                   <!-- ใส่ค่าเดิม (value) ค้างไว้ในช่องกรอก -->
                    <input type="text" name="first_name" required
                           value="{{ form.first_name.value|default_if_none:request.user.first_name }}"
                           class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
                    {{ form.first_name.errors }}
                 </div>
+                <!-- นามสกุล -->
                 <div>
                    <label class="block text-sm font-medium text-gray-700 mb-1.5">นามสกุล <span class="text-red-500">*</span></label>
                    <input type="text" name="last_name" required
@@ -100,6 +129,7 @@
                 </div>
               </div>
 
+              <!-- ชื่อเล่น -->
               <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1.5">ชื่อเล่น</label>
                   <input type="text" name="nickname"
@@ -107,6 +137,7 @@
                          class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
               </div>
 
+              <!-- ประวัติย่อ (Bio) -->
               <div>
                  <label class="block text-sm font-medium text-gray-700 mb-1.5">แนะนำตัวสั้นๆ (Bio)</label>
                  <textarea name="bio" rows="3" placeholder="เขียนแนะนำตัวให้นักเรียนรู้จัก..."
@@ -117,6 +148,9 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- ส่วนที่ 2: ข้อมูลการเรียน/การสอน และ ช่องทางติดต่อ -->
+    <!-- ========================================== -->
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
         <h3 class="font-semibold text-gray-900">
@@ -125,8 +159,10 @@
       </div>
       <div class="p-6 md:p-8">
          
+         <!-- แสดงฟิลด์ข้อมูลสำหรับนักเรียน -->
          {% if role == 'student' %}
          <div class="space-y-5">
+            <!-- ห้องเรียน -->
             <div>
                <label class="block text-sm font-medium text-gray-700 mb-1.5">ห้องเรียน</label>
                <div class="relative">
@@ -139,12 +175,14 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+               <!-- เบอร์โทรศัพท์นักเรียน -->
                <div>
                    <label class="block text-sm font-medium text-gray-700 mb-1.5">เบอร์โทรศัพท์</label>
                    <input type="tel" name="phone" placeholder="08x-xxx-xxxx"
                           value="{{ form.phone.value|default_if_none:'' }}"
                           class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
                </div>
+               <!-- Line ID นักเรียน -->
                <div>
                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Line ID</label>
                    <input type="text" name="line_id" placeholder="@..."
@@ -154,8 +192,10 @@
             </div>
          </div>
 
+         <!-- แสดงฟิลด์ข้อมูลสำหรับครู -->
          {% else %}
          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- กลุ่มสาระฯ (แบบ Dropdown) -->
             <div>
                <label class="block text-sm font-medium text-gray-700 mb-1.5">กลุ่มสาระ / แผนก</label>
                <select name="department" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
@@ -170,18 +210,21 @@
                    <option value="work" {% if form.department.value == 'work' %}selected{% endif %}>การงานอาชีพ</option>
                </select>
             </div>
+            <!-- เบอร์โทรศัพท์ครู -->
             <div>
                <label class="block text-sm font-medium text-gray-700 mb-1.5">เบอร์โทรศัพท์</label>
                <input type="tel" name="phone" placeholder="08x-xxx-xxxx"
                       value="{{ form.phone.value|default_if_none:'' }}"
                       class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
             </div>
+            <!-- Line ID ครู -->
             <div>
                <label class="block text-sm font-medium text-gray-700 mb-1.5">Line ID</label>
                <input type="text" name="line_id" placeholder="@..."
                       value="{{ form.line_id.value|default_if_none:'' }}"
                       class="w-full px-4 py-2.5 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-xl focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 outline-none transition">
             </div>
+            <!-- ตำแหน่งครู -->
             <div>
                <label class="block text-sm font-medium text-gray-700 mb-1.5">ตำแหน่ง</label>
                <input type="text" name="position" placeholder="เช่น ครูผู้สอน"
@@ -194,12 +237,16 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- ส่วนที่ 3: ข้อมูลบัญชีผู้ใช้ (อีเมลระบบ) -->
+    <!-- ========================================== -->
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
       <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
         <h3 class="font-semibold text-gray-900">บัญชีผู้ใช้</h3>
       </div>
       <div class="p-6 md:p-8">
          <label class="block text-sm font-medium text-gray-700 mb-1.5">อีเมล (Login ID)</label>
+         <!-- ฟิลด์อีเมลถูกกำหนดเป็น readonly ล็อกไว้ไม่ให้แก้ไขจากหน้านี้ -->
          <input type="email" name="email" readonly
                 value="{{ form.email.value|default_if_none:request.user.email }}"
                 class="w-full px-4 py-2.5 bg-gray-100 border border-gray-300 text-gray-500 text-sm rounded-xl cursor-not-allowed">
@@ -207,6 +254,9 @@
       </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- แถบปุ่มบันทึก/ยกเลิก ด้านล่างแบบเกาะติดขอบจอ (Sticky) -->
+    <!-- ========================================== -->
     <div class="sticky bottom-4 z-20">
         <div class="bg-white/90 backdrop-blur border border-gray-200 shadow-xl rounded-2xl p-4 flex justify-between items-center max-w-4xl mx-auto">
             <span class="text-xs text-gray-500 hidden sm:inline">ตรวจสอบข้อมูลก่อนบันทึก</span>
@@ -223,6 +273,9 @@
 
   </form>
 
+  <!-- ========================================== -->
+  <!-- โซนอันตราย (ตั้งค่าที่ละเอียดอ่อน เช่น เปลี่ยนรหัสผ่าน) -->
+  <!-- ========================================== -->
   <div class="mt-12 pt-8 border-t border-gray-200">
      <h3 class="text-sm font-bold text-red-600 mb-3">Danger Zone</h3>
      <div class="bg-red-50 border border-red-100 rounded-xl p-4 flex justify-between items-center">
@@ -238,13 +291,19 @@
 
 </main>
 
+<!-- ========================================== -->
+<!-- Javascript -->
+<!-- ========================================== -->
 <script>
+  // ฟังก์ชันสำหรับแสดงภาพตัวอย่างทันที เมื่อผู้ใช้เลือกไฟล์รูปโปรไฟล์ใหม่
   function previewImage(event) {
-    const reader = new FileReader();
+    const reader = new FileReader(); // สร้าง FileReader ตัวใหม่เพื่ออ่านไฟล์
     reader.onload = function(){
+      // เมื่ออ่านไฟล์เสร็จ ให้เอารูปไปแสดงใน tag img ที่มี id='avatar-preview'
       const output = document.getElementById('avatar-preview');
       output.src = reader.result;
     }
+    // ถ้าผู้ใช้เลือกไฟล์มาจริง ให้เริ่มทำการอ่านไฟล์นั้นเป็น Data URL
     if(event.target.files[0]) {
       reader.readAsDataURL(event.target.files[0]);
     }

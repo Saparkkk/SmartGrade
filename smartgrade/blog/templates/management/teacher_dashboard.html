@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- โหลดไฟล์ Static สำหรับใช้งานร่วมกับ Django -->
 {% load static %}
 <html lang="th">
 <head>
@@ -6,20 +7,22 @@
   <title>Teacher Dashboard | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Base CSS -->
+  <!-- ไฟล์ CSS พื้นฐานของระบบ -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 
-  <!-- Tailwind CDN -->
+  <!-- โหลด Tailwind CSS จาก CDN สำหรับจัดการสไตล์แบบ Utility-first -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-  <!-- ===== Header ===== -->
+  <!-- ========================================== -->
+  <!-- ส่วนแถบนำทางด้านบน (Header / Navigation) -->
+  <!-- ========================================== -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
 
-      <!-- Logo -->
+      <!-- ส่วนที่ 1: โลโก้และชื่อระบบ -->
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400
                     flex items-center justify-center text-white font-bold shadow">
@@ -31,20 +34,23 @@
         </div>
       </div>
 
-      <!-- Navigation -->
+      <!-- ส่วนที่ 2: เมนูลิงก์นำทางสำหรับคุณครู -->
       <nav class="flex items-center gap-3 text-xs">
+        <!-- ลิงก์ไปหน้าหลัก (Dashboard) -->
         <a href="{% url 'teacher_dashboard' %}"
            class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700
                   border border-indigo-200 hover:bg-indigo-100 transition">
           หน้าหลัก
         </a>
 
+        <!-- ลิงก์ไปหน้ารายชื่อนักเรียนทั้งหมด -->
         <a href="{% url 'teacher_student_list' %}"
            class="px-3 py-1.5 rounded-full bg-gray-100 text-gray-700
                   border border-gray-200 hover:bg-gray-200 transition">
           นักเรียนทั้งหมด
         </a>
 
+        <!-- ลิงก์ไปหน้าสำหรับนำเข้าข้อมูลผ่านไฟล์ CSV -->
         <a href="{% url 'teacher_student_import' %}"
            class="px-3 py-1.5 rounded-full bg-teal-50 text-teal-700
                   border border-teal-200 hover:bg-teal-100 transition">
@@ -52,25 +58,28 @@
         </a>
       </nav>
 
-      <!-- User -->
+      <!-- ส่วนที่ 3: ข้อมูลผู้ใช้งานปัจจุบันและปุ่มออกจากระบบ -->
       <div class="flex items-center gap-3 text-xs text-gray-600">
+        <!-- แสดงชื่อเต็มหรือ Username ของคุณครู -->
         <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
           คุณครู: {{ request.user.get_full_name|default:request.user.username }}
         </span>
 
+        <!-- รูปโปรไฟล์ (ถ้ามี) หรือแสดงตัวอักษรตัวแรกของชื่อ -->
         <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
            class="h-9 w-9 rounded-full overflow-hidden border border-slate-200
                   flex items-center justify-center bg-indigo-500 text-white
                   text-xs font-semibold shadow hover:opacity-90 transition">
           {% if user_profile.profile_image %}
             <img src="{{ user_profile.profile_image.url }}"
-                  alt="avatar"
+                 alt="avatar"
                  class="h-full w-full object-cover">
           {% else %}
             {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
           {% endif %}
         </a>
 
+        <!-- ปุ่ม Logout ออกจากระบบ -->
         <a href="{% url 'logout' %}"
            class="ml-2 inline-flex items-center px-3 py-1.5 rounded-full
                   bg-rose-500 hover:bg-rose-600 text-white text-[11px] transition">
@@ -81,10 +90,14 @@
     </div>
   </header>
 
-  <!-- ===== Main ===== -->
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+  <!-- ========================================== -->
   <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8 space-y-8">
 
-    <!-- Overview -->
+    <!-- ========================================== -->
+    <!-- วิดเจ็ตที่ 1: ภาพรวมห้องเรียน (แสดงจำนวนนักเรียนทั้งหมด) -->
+    <!-- ========================================== -->
     <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-8">
       <div class="flex items-center justify-between gap-6">
         <div>
@@ -99,13 +112,16 @@
         <div class="text-right">
           <p class="text-xs text-gray-500 mb-1">จำนวนนักเรียน</p>
           <div class="text-4xl font-bold text-indigo-600">
+            <!-- ดึงจำนวนนักเรียนทั้งหมดมาแสดง -->
             {{ total_students }}
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Risk Students -->
+    <!-- ========================================== -->
+    <!-- วิดเจ็ตที่ 2: รายชื่อนักเรียนกลุ่มเสี่ยง (ต้องติดตาม) -->
+    <!-- ========================================== -->
     <section class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 md:p-7">
       <div class="flex justify-between items-center mb-4">
           <div>
@@ -118,15 +134,20 @@
           </div>
       </div>
 
+      <!-- เช็คว่ามีนักเรียนในกลุ่มเสี่ยงหรือไม่ -->
       {% if risk_list %}
+        <!-- แสดงรายการการ์ดนักเรียนในรูปแบบ Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           
           {% for item in risk_list %}
+            <!-- เมื่อคลิกการ์ดจะไปยังหน้ารายงานของนักเรียนคนนั้น -->
             <a href="{% url 'student_report' item.info.id %}" 
                class="group block bg-white border border-red-100 rounded-xl p-4 hover:shadow-md hover:border-red-300 transition relative overflow-hidden">
                
+               <!-- แถบสีด้านซ้ายของการ์ด เพื่อบอกระดับความเสี่ยง (แดง=วิกฤต, เหลือง=เฝ้าระวัง) -->
                <div class="absolute left-0 top-0 bottom-0 w-1.5 {% if item.risk_status == 'critical' %}bg-red-500{% else %}bg-yellow-400{% endif %} group-hover:scale-y-110 transition"></div>
 
+               <!-- ข้อมูลส่วนตัวเบื้องต้น: ชื่อ, รหัส, วันที่บันทึกล่าสุด -->
                <div class="flex justify-between items-start mb-3 pl-2">
                   <div>
                       <div class="font-bold text-gray-800 group-hover:text-indigo-700 transition truncate w-32 md:w-40">
@@ -135,6 +156,7 @@
                       <div class="flex items-center gap-2">
                         <div class="text-[10px] text-gray-400">ID: {{ item.info.user.username }}</div>
                         
+                        <!-- ถ้ามีวันที่บันทึกข้อมูลล่าสุด ให้แสดง -->
                         {% if item.last_date %}
                         <div class="text-[9px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-500 border border-gray-200">
                             {{ item.last_date|date:"d/m/y" }}
@@ -143,28 +165,37 @@
                       </div>
                   </div>
                   
+                  <!-- ป้ายกำกับแจ้งเตือนสถานะความเสี่ยง (ใช้ตัวแปร risk_class จาก Backend เพื่อกำหนดสี) -->
                   <span class="text-[10px] px-2 py-1 rounded-lg border font-semibold {{ item.risk_class }}">
                     {{ item.risk_label }}
                   </span>
                </div>
 
+               <!-- ข้อมูลสถิติ (หลอดเปอร์เซ็นต์แบบแท่ง) -->
                <div class="pl-2 space-y-3">
+                  <!-- หลอดที่ 1: เปอร์เซ็นต์การเข้าเรียนล่าสุด -->
                   <div>
                       <div class="flex justify-between text-[10px] mb-1 text-gray-500 font-medium">
-                          <span>เข้าเรียน (ล่าสุด)</span> <span class="{% if item.stat_att < 50 %}text-red-600 font-bold{% else %}text-gray-600{% endif %}">
+                          <span>เข้าเรียน (ล่าสุด)</span> 
+                          <!-- ถ้าน้อยกว่า 50% ให้ไฮไลท์สีแดงตัวหนา -->
+                          <span class="{% if item.stat_att < 50 %}text-red-600 font-bold{% else %}text-gray-600{% endif %}">
                               {{ item.stat_att }}%
                           </span>
                       </div>
+                      <!-- โครงหลอด Bar -->
                       <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                          <!-- ตัวแถบสี จะยาวตามตัวแปร item.stat_att และเปลี่ยนสีตามช่วงเปอร์เซ็นต์ -->
                           <div class="h-1.5 rounded-full transition-all duration-1000 
                                       {% if item.stat_att < 50 %}bg-red-500{% elif item.stat_att < 80 %}bg-yellow-400{% else %}bg-emerald-500{% endif %}" 
                                style="width: {{ item.stat_att }}%"></div>
                       </div>
                   </div>
 
+                  <!-- หลอดที่ 2: เปอร์เซ็นต์คะแนนและงานล่าสุด -->
                   <div>
                       <div class="flex justify-between text-[10px] mb-1 text-gray-500 font-medium">
                           <span>คะแนน & งาน (ล่าสุด)</span>
+                          <!-- ถ้าน้อยกว่า 50% ให้ไฮไลท์สีแดงตัวหนา -->
                           <span class="{% if item.stat_score < 50 %}text-red-600 font-bold{% else %}text-gray-600{% endif %}">
                               {{ item.stat_score }}%
                           </span>
@@ -177,6 +208,7 @@
                   </div>
                </div>
                
+               <!-- ลิงก์เล็กๆ ด้านล่างการ์ด เมื่อชี้เมาส์จะเปลี่ยนเป็นสีม่วง -->
                <div class="mt-3 text-right">
                    <span class="text-[10px] text-gray-400 group-hover:text-indigo-500 transition flex items-center justify-end gap-1">
                        ดูรายงานละเอียด ➔
@@ -185,6 +217,8 @@
             </a>
           {% endfor %}
         </div>
+
+      <!-- กรณีที่ไม่มีนักเรียนในกลุ่มเสี่ยงเลย -->
       {% else %}
         <div class="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
            <span class="text-4xl mb-2">🎉</span>

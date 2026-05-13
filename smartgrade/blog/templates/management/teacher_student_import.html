@@ -1,19 +1,25 @@
 <!doctype html>
+<!-- โหลดสแตติกไฟล์ของ Django (เช่น รูปภาพ, CSS, JS) -->
 {% load static %}
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <title>Import CSV นักเรียน | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- เรียกใช้ไฟล์ CSS ของโปรเจกต์ -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <!-- เรียกใช้ Tailwind CSS ผ่าน CDN สำหรับจัดหน้าตาเว็บ -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
-  <!-- Top bar -->
+  <!-- ========================================== -->
+  <!-- ส่วนแถบนำทางด้านบน (Top bar / Navigation) -->
+  <!-- ========================================== -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
 
+      <!-- โลโก้และชื่อระบบ -->
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
                     flex items-center justify-center text-white font-bold shadow">
@@ -25,6 +31,7 @@
         </div>
       </div>
 
+      <!-- เมนูนำทาง (ลิงก์ไปยังหน้าต่างๆ) -->
       <nav class="flex items-center gap-3 text-xs">
         <a href="{% url 'teacher_dashboard' %}"
           class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
@@ -42,10 +49,14 @@
         </a>
       </nav>
 
+      <!-- ส่วนแสดงข้อมูลโปรไฟล์ผู้ใช้งานและปุ่ม Logout -->
       <div class="flex items-center gap-3 text-xs text-gray-600">
+        <!-- แสดงชื่อครูที่ล็อกอินอยู่ -->
         <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
           คุณครู: {{ request.user.get_full_name|default:request.user.username }}
         </span>
+        
+        <!-- รูปโปรไฟล์ผู้ใช้ (ถ้าไม่มีให้แสดงตัวอักษรตัวแรกของชื่อ) -->
         <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
           class="h-9 w-9 rounded-full overflow-hidden border border-slate-200 flex items-center justify-center bg-indigo-500 text-white text-xs font-semibold shadow hover:opacity-90 transition">
           {% if user_profile.profile_image %}
@@ -55,6 +66,8 @@
             {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
           {% endif %}
         </a>
+        
+        <!-- ปุ่มออกจากระบบ -->
         <a href="{% url 'logout' %}"
            class="ml-2 inline-flex items-center px-3 py-1.5 rounded-full
                   bg-rose-500 hover:bg-rose-600 text-white text-[11px] transition">
@@ -65,6 +78,9 @@
     </div>
   </header>
 
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+  <!-- ========================================== -->
   <main class="flex-1 max-w-3xl mx-auto px-4 md:px-8 py-8">
 
     <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-6 space-y-5">
@@ -72,8 +88,10 @@
         Import CSV ข้อมูลนักเรียน / พฤติกรรม
       </h1>
 
+      <!-- ส่วนตรวจสอบและแสดงข้อความแจ้งเตือน (Alerts) เช่น บันทึกสำเร็จ หรือเกิดข้อผิดพลาด -->
       {% if messages %}
         {% for m in messages %}
+          <!-- เปลี่ยนสีกล่องข้อความตามประเภทของ Alert (success, warning, error) -->
           <div class="text-sm px-4 py-2 rounded-md mb-2
                       {% if m.tags == 'success' %}
                         bg-emerald-50 text-emerald-700 border border-emerald-200
@@ -82,16 +100,21 @@
                       {% else %}
                         bg-red-50 text-red-700 border border-red-200
                       {% endif %}">
-            {{ m|safe }}  </div>
+            {{ m|safe }}  
+          </div>
         {% endfor %}
       {% endif %}
 
+      <!-- ฟอร์มอัปโหลดไฟล์ CSV (ต้องมี enctype="multipart/form-data" สำหรับส่งไฟล์) -->
       <form method="post" action="{% url 'teacher_student_import' %}" enctype="multipart/form-data" class="space-y-4">
+        <!-- Token ป้องกันการโจมตีแบบ CSRF (จำเป็นสำหรับฟอร์มใน Django) -->
         {% csrf_token %}
+        
         <div class="space-y-1">
           <label class="block text-sm font-medium text-gray-700">
             เลือกไฟล์ CSV
           </label>
+          <!-- ช่องสำหรับเลือกไฟล์เข้าสู่ระบบ -->
           <input type="file" name="file"
                  class="block w-full text-sm text-gray-700
                         file:mr-4 file:py-2 file:px-4
@@ -101,11 +124,14 @@
                         hover:file:bg-indigo-100">
         </div>
 
+        <!-- ปุ่มกดยืนยันการนำเข้าไฟล์ -->
         <button type="submit"
                 class="inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-sky-500
                        text-white text-sm font-semibold shadow hover:opacity-90 transition">
           นำเข้า CSV
         </button>
+
+        <!-- แสดงปุ่มนำเข้า CSV แบบระบุวิชา (จะแสดงก็ต่อเมื่อมีการส่งตัวแปร subject มา) -->
         {% if subject %}
             <a href="{% url 'upload_classroom_csv' subject.id %}" 
               class="text-green-600 hover:text-green-800 text-sm font-semibold flex items-center gap-1">
@@ -115,31 +141,41 @@
         {% endif %}
       </form>
 
+      <!-- ========================================== -->
+      <!-- ส่วนคำแนะนำการจัดรูปแบบไฟล์ CSV ให้ผู้ใช้ดู -->
+      <!-- ========================================== -->
       <div class="pt-4 border-t border-gray-200 text-xs text-gray-600 space-y-2">
-    <p class="font-semibold text-indigo-600">รูปแบบ Header ที่รองรับ (แนะนำตามนี้):</p>
-    <div class="bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto">
-        <code class="text-[10px] text-gray-700 leading-relaxed">
-            username, student_id, first_name, last_name, email, class_name, record_date, quiz_score, homework_done, activity_score, attendance_score
-        </code>
-    </div>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 bg-blue-50 p-3 rounded-xl border border-blue-100">
-        <div class="space-y-1">
-            <p class="font-bold text-blue-800">ข้อมูลบัญชี:</p>
-            <ul class="list-disc list-inside text-[11px] text-blue-700">
-                <li><span class="font-semibold">username:</span> ใช้รหัสนักเรียน (สำหรับเข้าระบบ)</li>
-                <li><span class="font-semibold">student_id:</span> รหัสนักเรียน (สำหรับแสดงผล)</li>
-                <li><span class="font-semibold">first_name / last_name:</span> ชื่อและนามสกุล</li>
-                <li><span class="font-semibold">email:</span> อีเมลของนักเรียน</li>
-            </ul>
+        <p class="font-semibold text-indigo-600">รูปแบบ Header ที่รองรับ (แนะนำตามนี้):</p>
+        
+        <!-- กล่องแสดงตัวอย่าง Header คอลัมน์ที่ต้องมีในไฟล์ CSV -->
+        <div class="bg-gray-50 border border-gray-200 rounded-md p-3 overflow-x-auto">
+            <code class="text-[10px] text-gray-700 leading-relaxed">
+                username, student_id, first_name, last_name, email, class_name, record_date, quiz_score, homework_done, activity_score, attendance_score
+            </code>
         </div>
-        <div class="space-y-1">
-            <p class="font-bold text-blue-800">ข้อมูลคะแนน:</p>
-            <ul class="list-disc list-inside text-[11px] text-blue-700">
-                <li><span class="font-semibold">homework_done:</span> 1 = ส่ง, 0 = ไม่ส่ง</li>
-                <li><span class="font-semibold">คะแนนอื่นๆ:</span> ใส่เป็นตัวเลข (0-100)</li>
-            </ul>
+        
+        <!-- คำอธิบายความหมายของแต่ละคอลัมน์ -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 bg-blue-50 p-3 rounded-xl border border-blue-100">
+            <!-- คอลัมน์ข้อมูลบัญชีนักเรียน -->
+            <div class="space-y-1">
+                <p class="font-bold text-blue-800">ข้อมูลบัญชี:</p>
+                <ul class="list-disc list-inside text-[11px] text-blue-700">
+                    <li><span class="font-semibold">username:</span> ใช้รหัสนักเรียน (สำหรับเข้าระบบ)</li>
+                    <li><span class="font-semibold">student_id:</span> รหัสนักเรียน (สำหรับแสดงผล)</li>
+                    <li><span class="font-semibold">first_name / last_name:</span> ชื่อและนามสกุล</li>
+                    <li><span class="font-semibold">email:</span> อีเมลของนักเรียน</li>
+                </ul>
+            </div>
+            <!-- คอลัมน์ข้อมูลคะแนนและพฤติกรรม -->
+            <div class="space-y-1">
+                <p class="font-bold text-blue-800">ข้อมูลคะแนน:</p>
+                <ul class="list-disc list-inside text-[11px] text-blue-700">
+                    <li><span class="font-semibold">homework_done:</span> 1 = ส่ง, 0 = ไม่ส่ง</li>
+                    <li><span class="font-semibold">คะแนนอื่นๆ:</span> ใส่เป็นตัวเลข (0-100)</li>
+                </ul>
+            </div>
         </div>
+      </div>
     </div>
   </main>
 </body>

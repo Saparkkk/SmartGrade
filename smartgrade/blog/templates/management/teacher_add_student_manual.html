@@ -1,29 +1,49 @@
 <!doctype html>
+<!-- โหลด static ไฟล์ของ Django (เพื่อให้เรียกใช้ไฟล์ CSS/JS ภายในโปรเจกต์ได้) -->
 {% load static %}
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <title>เพิ่มนักเรียนรายคน | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- โหลด Tailwind CSS ผ่าน CDN สำหรับใช้จัดหน้าตาเว็บ (Styling) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- โหลดไฟล์ CSS หลักของระบบ (ถ้ามีการเขียน Custom CSS ไว้) -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
 </head>
 <body class="bg-gray-50 min-h-screen font-sans text-gray-800">
 
+  <!-- ========================================== -->
+  <!-- ส่วนแถบด้านบน (Header) -->
+  <!-- ========================================== -->
+  <!-- ใช้ sticky top-0 เพื่อให้แถบนี้ติดอยู่ด้านบนเสมอเวลาเลื่อนจอ -->
   <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+        <!-- ลิงก์กลับไปยังหน้า Dashboard ของครู -->
         <a href="{% url 'teacher_dashboard' %}" class="flex items-center gap-2 text-gray-600 hover:text-indigo-600 transition">
             <span>&larr; กลับหน้าหลัก</span>
         </a>
         <div class="font-bold text-lg text-indigo-700">เพิ่มนักเรียนเข้า Class</div>
-        <div class="w-8"></div> </div>
+        <!-- กล่องเปล่าเพื่อรักษาสมดุลของ Flexbox ให้ข้อความตรงกลางอยู่กึ่งกลางพอดี -->
+        <div class="w-8"></div> 
+    </div>
   </header>
 
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+  <!-- ========================================== -->
   <main class="max-w-md mx-auto px-4 py-10">
     
+    <!-- ========================================== -->
+    <!-- ส่วนแจ้งเตือนข้อความ (Messages/Alerts) -->
+    <!-- ========================================== -->
+    <!-- ตรวจสอบว่าระบบมีส่งข้อความแจ้งเตือนมาให้แสดงหรือไม่ (เช่น เพิ่มสำเร็จ หรือ รหัสไม่ถูกต้อง) -->
     {% if messages %}
     <div class="mb-6 space-y-2">
         {% for message in messages %}
+        <!-- เปลี่ยนสีพื้นหลังและไอคอนตามประเภทของข้อความ (success=เขียว, error=แดง, อื่นๆ=เหลือง) -->
         <div class="p-4 rounded-xl border flex items-start gap-3
             {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-700
             {% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-700
@@ -37,13 +57,20 @@
     </div>
     {% endif %}
 
+    <!-- ========================================== -->
+    <!-- กล่องฟอร์มเพิ่มนักเรียน -->
+    <!-- ========================================== -->
     <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        
+        <!-- ส่วนหัวของฟอร์ม (ตกแต่งด้วยสีไล่ระดับ Gradient) -->
         <div class="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-center">
             <h1 class="text-2xl font-bold mb-1">เพิ่มนักเรียนด้วย ID</h1>
             <p class="text-indigo-100 text-sm">กรอกรหัสนักเรียนเพื่อดึงเข้าสู่ห้องเรียนของคุณ</p>
         </div>
 
+        <!-- ฟอร์มสำหรับส่งข้อมูล (ส่งแบบ POST method) -->
         <form method="POST" class="p-6 space-y-6">
+            <!-- Token ความปลอดภัยของ Django เพื่อป้องกันการโจมตีแบบ CSRF (ต้องมีเสมอในฟอร์ม POST) -->
             {% csrf_token %}
             
             <div>
@@ -51,15 +78,18 @@
                     รหัสนักเรียน (Username)
                 </label>
                 <div class="relative">
+                    <!-- ช่องรับข้อมูล (Input) บังคับกรอก (required) และให้โฟกัสอัตโนมัติ (autofocus) -->
                     <input type="text" name="student_id" id="student_id" required autofocus
                            class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition outline-none"
                            placeholder="เช่น 6601001, john_doe">
+                    <!-- ไอคอนแว่นขยายที่อยู่ด้านซ้ายของช่อง Input -->
                     <div class="absolute left-3 top-3.5 text-gray-400">
                         🔍
                     </div>
                 </div>
             </div>
 
+            <!-- ปุ่มกดยืนยันฟอร์ม -->
             <button type="submit" 
                     class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow transition transform active:scale-95">
                 ยืนยันการเพิ่มนักเรียน

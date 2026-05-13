@@ -1,18 +1,26 @@
 <!doctype html>
+<!-- โหลด static ไฟล์ของ Django เพื่อใช้งานไฟล์ assets ต่างๆ -->
 {% load static %}
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <title>นักเรียนทั้งหมด | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- เรียกใช้ไฟล์ CSS พื้นฐานของระบบ -->
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <!-- โหลด Tailwind CSS ผ่าน CDN สำหรับใช้จัดหน้าตาเว็บ -->
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
+  <!-- ========================================== -->
+  <!-- ส่วนแถบนำทางด้านบน (Header / Navbar) -->
+  <!-- ========================================== -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200">
     <div class="max-w-6xl mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
 
+      <!-- โลโก้และชื่อระบบ -->
       <div class="flex items-center gap-3">
         <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 
                     flex items-center justify-center text-white font-bold shadow">
@@ -24,6 +32,7 @@
         </div>
       </div>
 
+      <!-- เมนูนำทาง (Navigation Links) -->
       <nav class="flex items-center gap-3 text-xs">
         <a href="{% url 'teacher_dashboard' %}"
           class="px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">
@@ -40,17 +49,20 @@
           Import CSV
         </a>
 
+        <!-- ปุ่มสำหรับเพิ่มนักเรียนแบบรายคน (Manual) -->
         <a href="{% url 'teacher_add_student_manual' %}" 
           class="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition">
           + เพิ่มนักเรียน
         </a>
       </nav>
 
+      <!-- ส่วนแสดงข้อมูลคุณครูและปุ่มออกจากระบบ -->
       <div class="flex items-center gap-3 text-xs text-gray-600">
         <span class="hidden md:inline-block px-3 py-1 rounded-full bg-gray-100 border border-gray-200">
           คุณครู: {{ request.user.get_full_name|default:request.user.username }}
         </span>
-       <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
+        <!-- รูปโปรไฟล์คุณครู -->
+        <a href="{% url 'profile' %}" title="ดูโปรไฟล์"
            class="h-9 w-9 rounded-full overflow-hidden border border-slate-200
                   flex items-center justify-center bg-indigo-500 text-white
                   text-xs font-semibold shadow hover:opacity-90 transition">
@@ -62,6 +74,7 @@
             {{ request.user.get_full_name|default:request.user.username|slice:":1"|upper }}
           {% endif %}
         </a>
+        <!-- ปุ่ม Logout -->
         <a href="{% url 'logout' %}"
            class="ml-2 inline-flex items-center px-3 py-1.5 rounded-full
                   bg-rose-500 hover:bg-rose-600 text-white text-[11px] transition">
@@ -72,23 +85,34 @@
     </div>
   </header>
 
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+  <!-- ========================================== -->
   <main class="flex-1 max-w-6xl mx-auto px-4 md:px-8 py-8">
     
     <div class="flex flex-col md:flex-row justify-between items-end md:items-center mb-6 gap-4">
       <h1 class="text-xl font-semibold text-gray-900">จัดการข้อมูลนักเรียน</h1>
     </div>
 
+    <!-- ========================================== -->
+    <!-- ส่วนฟอร์มค้นหาและกรองข้อมูล (Search & Filter) -->
+    <!-- ========================================== -->
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 mb-6">
+      <!-- ใช้ method="get" เพื่อส่งค่าการค้นหาไปทาง URL -->
       <form method="get" class="flex flex-col md:flex-row gap-3 items-center">
+        
+        <!-- ช่องค้นหาด้วยข้อความ (ค้นหาชื่อ หรือ Username) -->
         <div class="flex-1 w-full">
             <input type="text" name="q" value="{{ search_query|default:'' }}" 
                    placeholder="ค้นหาชื่อ หรือ Username..." 
                    class="w-full text-sm border border-gray-300 rounded-xl px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none">
         </div>
         
+        <!-- Dropdown กรองตามห้องเรียน -->
         <div class="w-full md:w-auto">
             <select name="class_name" class="w-full text-sm border border-gray-300 rounded-xl px-4 py-2 outline-none bg-white">
                 <option value="">ทุกห้องเรียน</option>
+                <!-- วนลูปดึงรายชื่อห้องทั้งหมดที่มีมาแสดงเป็น Option -->
                 {% for c in all_classes %}
                 <option value="{{ c }}" {% if class_filter == c %}selected{% endif %}>{{ c }}</option>
                 {% endfor %}
@@ -98,17 +122,24 @@
         <button type="submit" class="w-full md:w-auto px-6 py-2 rounded-xl bg-gray-800 text-white text-sm hover:bg-gray-900 transition shadow">
             ค้นหา
         </button>
+        
+        <!-- แสดงปุ่ม "ล้างค่า" กรณีที่มีการค้นหาหรือกรองข้อมูลอยู่ -->
         {% if search_query or class_filter %}
         <a href="{% url 'teacher_student_list' %}" class="text-xs text-gray-500 underline hover:text-gray-800">ล้างค่า</a>
         {% endif %}
       </form>
     </div>
 
+    <!-- ========================================== -->
+    <!-- ส่วนตารางแสดงรายชื่อนักเรียน -->
+    <!-- ========================================== -->
     <div class="bg-white border border-gray-200 rounded-2xl shadow-md p-4 md:p-6">
       
+      <!-- แจ้งเตือนข้อความ (Alerts) เช่น ลบสำเร็จ, เพิ่มสำเร็จ -->
       {% if messages %}
         <div class="mb-4 space-y-2">
         {% for message in messages %}
+          <!-- เปลี่ยนสีกรอบข้อความตามประเภทของ Message -->
           <div class="p-3 rounded-lg text-xs 
             {% if message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200
             {% elif message.tags == 'error' %}bg-red-50 text-red-700 border border-red-200
@@ -119,10 +150,12 @@
         </div>
       {% endif %}
 
+      <!-- ฟอร์มสำหรับจัดการข้อมูลทีละหลายรายการ (Bulk Action) เช่น ลบทีละหลายคน -->
       <form method="POST" action="{% url 'teacher_student_bulk_remove' %}" id="bulkDeleteForm" 
       onsubmit="return confirm('ยืนยันที่จะนำนักเรียนที่เลือกออกจากรายชื่อของคุณ? (ข้อมูลนักเรียนจะไม่ถูกลบจากระบบ)');">
         {% csrf_token %}
 
+        <!-- ปุ่มสำหรับกดยืนยันการนำออก (จะส่งค่า Checkbox ที่เลือกไป) -->
         <div class="mb-4 flex justify-end">
             <button type="submit" class="text-xs bg-orange-50 text-orange-600 border border-orange-200 hover:bg-orange-600 hover:text-white px-4 py-2 rounded-lg transition font-semibold flex items-center gap-2">
                 <span>📤 นำออกจากรายชื่อ</span>
@@ -131,35 +164,44 @@
 
         <div class="overflow-x-auto -mx-2 md:mx-0">
           <table class="min-w-full text-xs md:text-sm text-left text-gray-800">
+            <!-- หัวตาราง -->
             <thead class="border-b border-gray-200 text-[11px] uppercase text-gray-500 bg-gray-50">
             <tr>
+              <!-- Checkbox สำหรับเลือกทั้งหมด (Select All) -->
               <th class="px-3 py-3 rounded-tl-lg w-10 text-center">
                   <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
               </th>
-
               <th class="px-3 py-3">ชื่อผู้ใช้ (รหัส)</th> 
               <th class="px-3 py-3">ห้องเรียน</th>
               <th class="px-3 py-3 text-center">สถานะความเสี่ยง</th>
               <th class="px-3 py-3 text-right rounded-tr-lg">จัดการ</th>
             </tr>
             </thead>
+            
+            <!-- ตัวตาราง -->
             <tbody class="divide-y divide-gray-100">
+            <!-- วนลูปแสดงรายชื่อนักเรียน -->
             {% for s in students %}
               <tr class="hover:bg-gray-50 transition group">
                 
+                <!-- Checkbox ประจำแถวสำหรับการทำ Bulk Action (ผูก Value กับ ID ของนักเรียน) -->
                 <td class="px-3 py-3 text-center">
                     <input type="checkbox" name="student_ids" value="{{ s.id }}" class="student-checkbox rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                 </td>
 
+                <!-- Username/รหัสนักเรียน -->
                 <td class="px-3 py-3 font-medium text-indigo-900">
                   {{ s.user.username }}
                 </td>
+                
+                <!-- ชื่อห้องเรียน -->
                 <td class="px-3 py-3 text-gray-600">
                   {{ s.class_name }}
                 </td>
+                
+                <!-- ป้ายกำกับสถานะความเสี่ยง (เช็คเงื่อนไขตาม custom_status) -->
                 <td class="px-3 py-3 text-center">
                     <div class="flex flex-col items-center gap-1">
-                        
                         {% if s.custom_status == "normal" %}
                             <span class="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
                                 ปลอดภัย
@@ -179,6 +221,8 @@
                         {% endif %}
                     </div>
                 </td>
+                
+                <!-- ปุ่มจัดการ (ดูรายละเอียด / ลบแบบรายบุคคล) -->
                 <td class="px-3 py-3 text-right space-x-2">
                    <a href="{% url 'teacher_student_detail' s.id %}" class="text-indigo-600 hover:text-indigo-800 font-semibold bg-indigo-50 px-2 py-1 rounded-md transition">ดูข้อมูล</a>
                    
@@ -187,6 +231,7 @@
                       class="text-gray-400 hover:text-orange-600 px-2 py-1 transition">นำออก</a>
                 </td>
               </tr>
+            <!-- กรณีไม่มีนักเรียนในตารางเลย -->
             {% empty %}
               <tr>
                 <td colspan="5" class="px-3 py-8 text-center text-sm text-gray-500">
@@ -197,12 +242,19 @@
             </tbody>
           </table>
         </div>
-      </form></div>
+      </form>
+    </div>
   </main>
 
+  <!-- ========================================== -->
+  <!-- JavaScript -->
+  <!-- ========================================== -->
   <script>
+    // สคริปต์สำหรับจัดการ Checkbox "เลือกทั้งหมด"
     document.getElementById('selectAll').addEventListener('change', function() {
+        // เลือก Checkbox ที่เป็นของนักเรียนทั้งหมด
         const checkboxes = document.querySelectorAll('.student-checkbox');
+        // กำหนดสถานะ (Checked/Unchecked) ให้ตรงกับ Checkbox ตัวแม่
         checkboxes.forEach(checkbox => {
             checkbox.checked = this.checked;
         });

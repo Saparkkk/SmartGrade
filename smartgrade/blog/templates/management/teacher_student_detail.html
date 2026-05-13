@@ -1,20 +1,31 @@
 <!doctype html>
+<!-- โหลด static ไฟล์ของ Django เพื่อเรียกใช้ไฟล์ assets ต่างๆ -->
 {% load static %}
 <html lang="th">
 <head>
   <meta charset="utf-8">
   <title>รายละเอียดนักเรียน | SmartGrade</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <!-- โหลด Tailwind CSS ผ่าน CDN สำหรับใช้จัดสไตล์ -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- โหลด Alpine.js ผ่าน CDN สำหรับใช้จัดการสถานะของ UI (เช่น การเปลี่ยนแท็บ) -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- สไตล์ x-cloak ช่วยป้องกันไม่ให้ UI กระพริบ (FOUC) ระหว่างที่ Alpine.js กำลังโหลด -->
   <style>
     [x-cloak] { display: none !important; }
   </style>
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-800 flex flex-col">
 
+  <!-- ========================================== -->
+  <!-- ส่วนแถบนำทางด้านบน (Header) -->
+  <!-- ========================================== -->
   <header class="bg-white/80 backdrop-blur border-b border-gray-200 sticky top-0 z-20">
     <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+        <!-- โลโก้และชื่อระบบ -->
         <div class="flex items-center gap-3">
             <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-400 flex items-center justify-center text-white font-bold shadow">SG</div>
             <div>
@@ -22,12 +33,20 @@
                 <p class="text-xs text-gray-500">Teacher Dashboard</p>
             </div>
         </div>
+        <!-- ลิงก์กลับไปหน้ารายชื่อนักเรียน -->
         <a href="{% url 'teacher_student_list' %}" class="text-sm text-gray-500 hover:text-indigo-600 transition">← กลับหน้ารายชื่อ</a>
     </div>
   </header>
 
+  <!-- ========================================== -->
+  <!-- ส่วนเนื้อหาหลัก (Main Content) -->
+  <!-- กำหนด x-data="{ activeTab: 'behavior' }" ของ Alpine.js เพื่อกำหนดให้หน้าแรกที่แสดงคือแท็บ 'behavior' -->
+  <!-- ========================================== -->
   <main class="flex-1 max-w-6xl mx-auto px-4 py-8 w-full" x-data="{ activeTab: 'behavior' }">
     
+    <!-- ========================================== -->
+    <!-- ส่วนแจ้งเตือนการกระทำต่างๆ (Messages) เช่น บันทึกสำเร็จ หรือ ลบข้อมูลสำเร็จ -->
+    <!-- ========================================== -->
     {% if messages %}
     <div class="mb-6 space-y-2">
       {% for message in messages %}
@@ -36,6 +55,9 @@
     </div>
     {% endif %}
 
+    <!-- ========================================== -->
+    <!-- ส่วนแจ้งเตือนแนวโน้มพฤติกรรม (Trend Analysis Alert) (แสดงเมื่อมีความผิดปกติ) -->
+    <!-- ========================================== -->
     {% if trend_alert %}
     <div class="mb-6 p-4 rounded-xl border flex items-center gap-4 shadow-sm {{ trend_alert.css }}">
         <div class="text-3xl bg-white w-12 h-12 rounded-full flex items-center justify-center shadow-sm">
@@ -48,13 +70,19 @@
     </div>
     {% endif %}
 
+    <!-- ========================================== -->
+    <!-- การ์ดข้อมูลส่วนตัวของนักเรียน (Student Profile Card) -->
+    <!-- ========================================== -->
     <section class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 mb-6 relative overflow-hidden">
+        <!-- กราฟฟิกวงกลมตกแต่งมุมขวาบน -->
         <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 z-0"></div>
 
         <div class="flex flex-col md:flex-row gap-6 items-start relative z-10">
             
+            <!-- รูปโปรไฟล์ -->
             <div class="shrink-0 mx-auto md:mx-0">
                 <div class="h-24 w-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden ring-1 ring-gray-100">
+                    <!-- ถ้ามีรูปให้แสดงรูป ถ้าไม่มีให้ดึงรูปอัตโนมัติจาก UI Avatars -->
                     {% if student.profile_image %}
                         <img src="{{ student.profile_image.url }}" alt="Profile" class="h-full w-full object-cover">
                     {% else %}
@@ -64,15 +92,18 @@
                 </div>
             </div>
 
+            <!-- ข้อมูลชื่อ ข้อมูลติดต่อ และสถานะ -->
             <div class="flex-1 w-full text-center md:text-left space-y-3">
                 
                 <div>
+                    <!-- ชื่อ-นามสกุล และชื่อเล่น -->
                     <h1 class="text-3xl font-bold text-gray-900 leading-tight">
                         {{ student.user.first_name }} {{ student.user.last_name }}
                         {% if student.nickname %}
                             <span class="text-xl text-gray-500 font-normal ml-2">({{ student.nickname }})</span>
                         {% endif %}
                     </h1>
+                    <!-- รหัสประจำตัวนักเรียนและห้อง -->
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <p class="text-sm text-gray-500">
                             Username: {{ student.user.username }} 
@@ -80,6 +111,7 @@
                         <span class="mx-2 text-gray-300">|</span> 
                         <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">{{ student.class_name|default:"ไม่ระบุห้อง" }}</span>
                         
+                        <!-- เบอร์โทรศัพท์ (มีปุ่มกดโทรออกสำหรับมือถือ) -->
                         {% if student.phone %}
                         <span class="mx-2 text-gray-300">|</span>
                         <div class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
@@ -92,6 +124,7 @@
                     </div>
                 </div>
 
+                <!-- ช่องทางติดต่ออื่นๆ (แสดงเมื่อมีข้อมูล) -->
                 <div class="flex flex-wrap gap-4 justify-center md:justify-start text-sm text-gray-600 pt-2 border-t border-gray-100">
                     {% if student.phone %}
                     <div class="flex items-center gap-2">
@@ -115,6 +148,7 @@
                     {% endif %}
                 </div>
 
+                <!-- ประวัติหรือข้อความแนะนำตัวสั้นๆ -->
                 {% if student.bio %}
                 <div class="bg-gray-50 rounded-lg p-3 text-sm text-gray-600 italic border border-gray-100 mt-2">
                     "{{ student.bio }}"
@@ -122,10 +156,12 @@
                 {% endif %}
             </div>
 
+            <!-- กล่องแสดงสถานะความเสี่ยง (เสี่ยงสูง, เฝ้าระวัง, ปกติ) -->
             <div class="w-full md:w-auto flex flex-col items-center md:items-end gap-2 pt-4 md:pt-0 border-t md:border-t-0 border-gray-100">
                 <div class="flex items-center gap-2 bg-white pl-4 pr-2 py-2 rounded-xl border border-gray-200 shadow-sm">
                     <div class="text-right">
                         <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">สถานะ</p>
+                        <!-- เช็คค่า risk_status เพื่อแสดงข้อความและสีให้ตรงกัน -->
                         {% if student.risk_status == "critical" %}
                             <p class="text-red-600 font-bold leading-none">เสี่ยงสูง</p>
                         {% elif student.risk_status == "warning" %}
@@ -134,6 +170,7 @@
                             <p class="text-emerald-600 font-bold leading-none">ปกติ</p>
                         {% endif %}
                     </div>
+                    <!-- ไอคอนจุดไฟกระพริบสำหรับสถานะความเสี่ยง -->
                     <div class="h-8 w-8 rounded-full flex items-center justify-center
                         {% if student.risk_status == 'critical' %}bg-red-100 text-red-500{% elif student.risk_status == 'warning' %}bg-yellow-100 text-yellow-500{% else %}bg-emerald-100 text-emerald-500{% endif %}">
                         <div class="h-3 w-3 rounded-full 
@@ -145,8 +182,15 @@
         </div>
     </section>
 
+    <!-- ========================================== -->
+    <!-- ระบบแท็บ (Tabs System) และเนื้อหาของแต่ละแท็บ -->
+    <!-- ========================================== -->
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
 
+        <!-- ========================================== -->
+        <!-- เมนูแท็บด้านซ้าย (Sidebar Tabs) -->
+        <!-- ใช้ Alpine.js @click เปลี่ยนค่า activeTab และ :class สลับสไตล์เมื่อปุ่มถูกเลือก -->
+        <!-- ========================================== -->
         <div class="lg:col-span-1 space-y-2 sticky top-24 h-fit">
             <button @click="activeTab = 'behavior'" 
                     :class="activeTab === 'behavior' ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-200' : 'bg-white text-gray-600 hover:bg-gray-50 border border-transparent'"
@@ -170,11 +214,20 @@
             </button>
         </div>
 
+        <!-- ========================================== -->
+        <!-- พื้นที่แสดงเนื้อหาด้านขวา (Tab Content Area) -->
+        <!-- ========================================== -->
         <div class="lg:col-span-3 space-y-6">
 
+            <!-- ========================================== -->
+            <!-- แท็บที่ 1: พฤติกรรม / คะแนน (behavior) -->
+            <!-- ใช้ x-show="activeTab === 'behavior'" เพื่อแสดงเมื่อแท็บนี้ถูกเลือก -->
+            <!-- ========================================== -->
             <div x-show="activeTab === 'behavior'" x-transition x-cloak class="space-y-6">
+                <!-- ฟอร์มสำหรับบันทึกคะแนนประจำวัน -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
                     <h2 class="text-lg font-bold text-gray-900 mb-4">บันทึกคะแนนประจำวัน</h2>
+                    <!-- ส่งค่า form action hidden ไปด้วยเพื่อบอก Backend ว่าทำอะไร -->
                     <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="add_behavior">
@@ -188,6 +241,8 @@
                         <button type="submit" class="md:col-span-2 bg-gray-800 text-white py-2 rounded-xl font-semibold hover:bg-gray-900 transition">บันทึกคะแนน</button>
                     </form>
                 </div>
+                
+                <!-- ตารางแสดงประวัติคะแนนที่เคยบันทึกไว้ -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left text-gray-600">
                         <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
@@ -197,14 +252,15 @@
                             {% for b in behaviors %}
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-3">{{ b.record_date|date:"d M Y" }}</td>
+                                <!-- เปลี่ยนสีตัวเลขการเข้าเรียน -->
                                 <td class="px-6 py-3 font-medium {% if b.attendance_score < 50 %}text-red-600{% else %}text-emerald-600{% endif %}">{{ b.attendance_score }}%</td>
                                 <td class="px-6 py-3">{{ b.homework_done|yesno:"✔,✖" }}</td>
                                 <td class="px-6 py-3 text-center">
+                                    <!-- ฟอร์มสำหรับลบข้อมูลรายการนี้ -->
                                     <form method="POST" onsubmit="return confirm('ยืนยันที่จะลบรายการนี้?');" class="inline-block">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="delete_behavior">
                                         <input type="hidden" name="record_id" value="{{ b.id }}">
-                                        
                                         <button type="submit" class="text-gray-400 hover:text-red-600 transition p-1 rounded-md hover:bg-red-50" title="ลบรายการ">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -221,11 +277,16 @@
                 </div>
             </div>
 
+            <!-- ========================================== -->
+            <!-- แท็บที่ 2: ส่ง Feedback (feedback) -->
+            <!-- ========================================== -->
             <div x-show="activeTab === 'feedback'" x-transition x-cloak class="space-y-6">
+                <!-- ฟอร์มสำหรับส่ง Feedback -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
                     <h2 class="text-lg font-bold text-gray-900 mb-4">💬 ส่ง Feedback / ข้อความ</h2>
                     <form method="post" class="space-y-4">
                         {% csrf_token %}
+                        <!-- ซ่อน action เพื่อส่งคำสั่งแยกกับฟอร์มอื่นๆ -->
                         <input type="hidden" name="action" value="add_feedback">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label>
@@ -237,13 +298,17 @@
                         </div>
                         <div class="flex gap-3">
                             <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-xl font-semibold shadow transition">บันทึก</button>
+                            <!-- ปุ่มเคลียร์ข้อมูลที่พิมพ์ -->
                             <button type="reset" class="text-gray-500 hover:text-gray-700 px-4 py-2">ล้างข้อมูล</button>
                         </div>
                     </form>
                 </div>
+                
+                <!-- กล่องแสดงประวัติ Feedback ที่เคยส่ง -->
                 <div class="space-y-3">
                     {% for f in feedbacks %}
                     <div class="bg-white border border-gray-200 p-4 rounded-xl flex gap-3">
+                        <!-- ไอคอนและพื้นหลังเปลี่ยนตามประเภท (ชม=เขียว, เตือน=แดง, ข้อความทั่วไป=เทา) -->
                         <div class="h-10 w-10 rounded-full flex items-center justify-center shrink-0
                             {% if f.feedback_type == 'praise' %}bg-emerald-100 text-emerald-600 text-xl{% elif f.feedback_type == 'warn' %}bg-red-100 text-red-600 text-xl{% else %}bg-gray-100 text-gray-600{% endif %}">
                             {% if f.feedback_type == 'praise' %}👏{% elif f.feedback_type == 'warn' %}⚠️{% else %}💬{% endif %}
@@ -260,8 +325,13 @@
                 </div>
             </div>
 
+            <!-- ========================================== -->
+            <!-- แท็บที่ 3: บันทึกโน้ตส่วนตัว (note) สำหรับครูดูเอง -->
+            <!-- ========================================== -->
             <div x-show="activeTab === 'note'" x-transition x-cloak class="space-y-6">
+                <!-- ฟอร์มสร้างโน้ตส่วนตัว -->
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 relative overflow-hidden">
+                    <!-- ตกแต่งมุมขวาบนเป็นกล่องสีเหลืองอ่อนสไตล์กระดาษ Post-it -->
                     <div class="absolute top-0 right-0 w-20 h-20 bg-yellow-100 rounded-bl-full -mr-10 -mt-10"></div>
                     <h2 class="text-lg font-bold text-gray-900 mb-4 relative z-10">🔒 บันทึกโน้ตส่วนตัว</h2>
                     <form method="post" class="space-y-4 relative z-10">
@@ -275,6 +345,8 @@
                         <button type="submit" class="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-xl font-semibold shadow transition">บันทึกโน้ต</button>
                     </form>
                 </div>
+                
+                <!-- การ์ดแสดงโน้ต (ใช้ Grid แบ่ง 2 คอลัมน์บนจอใหญ่) -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {% for n in notes %}
                     <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-xl shadow-sm">
@@ -289,7 +361,11 @@
                 </div>
             </div>
 
+            <!-- ========================================== -->
+            <!-- แท็บที่ 4: ติดต่อด่วน (contact) ใช้บันทึกเวลาติดต่อผู้ปกครอง/นักเรียน -->
+            <!-- ========================================== -->
             <div x-show="activeTab === 'contact'" x-transition x-cloak class="space-y-6">
+                <!-- ฟอร์มบันทึกการติดต่อด่วน -->
                 <div class="bg-white border border-rose-100 rounded-2xl shadow-sm p-6 ring-1 ring-rose-50">
                     <h2 class="text-lg font-bold text-rose-700 mb-4">📞 ติดต่อด่วน</h2>
                     <form method="post" class="space-y-4">
@@ -303,6 +379,8 @@
                         <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2 rounded-xl font-semibold shadow transition w-full">ส่งข้อความ / บันทึกการติดต่อ</button>
                     </form>
                 </div>
+                
+                <!-- ตารางสรุปประวัติการติดต่อ -->
                  <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 text-xs uppercase text-gray-500">
