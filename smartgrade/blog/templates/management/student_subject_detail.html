@@ -258,61 +258,60 @@
     document.addEventListener('DOMContentLoaded', function() {
         const ctx = document.getElementById('scoreChart').getContext('2d');
         
-        // ดึงข้อมูลจากตัวแปร Django มาใช้ใน JS Array
-        // เนื่องจากข้อมูลในตาราง records อาจเรียงจากใหม่สุดไปเก่าสุด
-        // แต่การแสดงผลบนกราฟควรเรียงจากวันเก่าไปวันใหม่ จึงใช้ฟิลเตอร์ 'reversed'
-        const labels = [{% for r in records reversed %}"{{ r.record_date|date:'d/m' }}",{% endfor %}];
-        const quizData = [{% for r in records reversed %}{{ r.quiz_score }},{% endfor %}];
-        const attData = [{% for r in records reversed %}{{ r.attendance_score }},{% endfor %}];
+        // ใช้ข้อมูล List ที่ประมวลผลและส่งมาจาก View (Backend) ได้เลย
+        // ไม่ต้องมา reversed ใน HTML แล้ว เพราะ Backend จัดการมาให้แล้ว
+        const labels = [{% for label in labels %}"{{ label }}",{% endfor %}];
+        const quizData = [{% for s in scores %}{{ s }},{% endfor %}];
+        const attData = [{% for a in att_scores %}{{ a }},{% endfor %}];
+        const avgData = [{% for avg in total_avg_scores %}{{ avg }},{% endfor %}]; // ข้อมูลค่าเฉลี่ยใหม่ที่เราทำไว้
 
         new Chart(ctx, {
-            type: 'line', // ตั้งค่ารูปแบบกราฟเป็นกราฟเส้น (Line Chart)
+            type: 'line',
             data: {
-                labels: labels, // ข้อมูลแกน X (วันที่)
+                labels: labels,
                 datasets: [
                     {
-                        label: 'คะแนนสอบ (Quiz)',
-                        data: quizData, // ข้อมูลคะแนนสอบ
-                        borderColor: '#4f46e5', // สีเส้นกราฟ (Indigo)
-                        backgroundColor: 'rgba(79, 70, 229, 0.1)', // สีพื้นหลังใต้เส้น
+                        label: 'คะแนนเฉลี่ยรวม (Quiz+Att+Act)', // เส้นใหม่: เด่นสุด
+                        data: avgData,
+                        borderColor: '#f59e0b', // สีส้ม (Amber)
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
                         borderWidth: 3,
-                        tension: 0.4, // ทำให้เส้นกราฟดูโค้งมนนุ่มนวล
-                        fill: true, // ระบายสีใต้เส้นกราฟ
-                        pointBackgroundColor: '#ffffff', // สีของจุดข้อมูล
-                        pointBorderColor: '#4f46e5',
+                        tension: 0.4,
+                        fill: true,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#f59e0b',
                         pointRadius: 5
+                    },
+                    {
+                        label: 'คะแนนสอบ (Quiz)',
+                        data: quizData,
+                        borderColor: '#4f46e5', // สี Indigo
+                        borderWidth: 2,
+                        borderDash: [5, 5], // เส้นประ
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 3
                     },
                     {
                         label: 'คะแนนเข้าเรียน',
                         data: attData,
-                        borderColor: '#10b981', // สีเส้น (Emerald)
+                        borderColor: '#10b981', // สี Emerald
                         borderWidth: 2,
-                        borderDash: [5, 5], // ทำให้เป็นเส้นประ
+                        borderDash: [2, 2], // เส้นประถี่ๆ
                         tension: 0.4,
-                        pointRadius: 0, // ซ่อนจุดของเส้นนี้
-                        hidden: true // กำหนดให้ซ่อนเส้นนี้เป็นค่าเริ่มต้น (กดดูได้ที่ Legend)
+                        hidden: true // ซ่อนเป็นค่าเริ่มต้น (ให้เด็กโฟกัสที่คะแนนเฉลี่ยก่อน)
                     }
                 ]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // เพื่อให้กราฟยืดขยายตามกล่องครอบ (Container)
+                maintainAspectRatio: false,
                 plugins: {
-                    legend: {
-                        position: 'top', // ตำแหน่งคำอธิบายสัญลักษณ์
-                        align: 'end',
-                        labels: { usePointStyle: true, boxWidth: 8 }
-                    }
+                    legend: { position: 'top', align: 'end', labels: { usePointStyle: true, boxWidth: 8 } }
                 },
                 scales: {
-                    y: {
-                        beginAtZero: true, // แกน Y เริ่มต้นที่ 0
-                        max: 100, // สมมติคะแนนเต็มที่ 100
-                        grid: { borderDash: [2, 4], color: '#f3f4f6' }
-                    },
-                    x: {
-                        grid: { display: false } // ซ่อนเส้น Grid ของแกน X ให้ดูสะอาดตา
-                    }
+                    y: { beginAtZero: true, max: 100, grid: { borderDash: [2, 4], color: '#f3f4f6' } },
+                    x: { grid: { display: false } }
                 }
             }
         });

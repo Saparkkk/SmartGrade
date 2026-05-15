@@ -106,7 +106,7 @@
                     <!-- รหัสประจำตัวนักเรียนและห้อง -->
                     <div class="flex flex-wrap items-center gap-2 mt-1">
                         <p class="text-sm text-gray-500">
-                            Username: {{ student.user.username }} 
+                            Student ID: {{ student.user.username }} 
                         </p>
                         <span class="mx-2 text-gray-300">|</span> 
                         <span class="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs font-bold">{{ student.class_name|default:"ไม่ระบุห้อง" }}</span>
@@ -161,20 +161,20 @@
                 <div class="flex items-center gap-2 bg-white pl-4 pr-2 py-2 rounded-xl border border-gray-200 shadow-sm">
                     <div class="text-right">
                         <p class="text-[10px] text-gray-400 uppercase font-bold tracking-wider">สถานะ</p>
-                        <!-- เช็คค่า risk_status เพื่อแสดงข้อความและสีให้ตรงกัน -->
-                        {% if student.risk_status == "critical" %}
-                            <p class="text-red-600 font-bold leading-none">เสี่ยงสูง</p>
-                        {% elif student.risk_status == "warning" %}
-                            <p class="text-yellow-600 font-bold leading-none">เฝ้าระวัง</p>
+                        <!-- เช็คค่า risk_level เพื่อแสดงข้อความและสีให้ตรงกัน -->
+                        {% if student.risk_level == "critical" %}
+                            <p class="text-red-600 font-bold">เสี่ยงสูง</p>
+                        {% elif student.risk_level == "warning" %}
+                            <p class="text-yellow-600 font-bold">เฝ้าระวัง</p>
                         {% else %}
-                            <p class="text-emerald-600 font-bold leading-none">ปกติ</p>
+                            <p class="text-emerald-600 font-bold">ปกติ</p>
                         {% endif %}
                     </div>
                     <!-- ไอคอนจุดไฟกระพริบสำหรับสถานะความเสี่ยง -->
                     <div class="h-8 w-8 rounded-full flex items-center justify-center
-                        {% if student.risk_status == 'critical' %}bg-red-100 text-red-500{% elif student.risk_status == 'warning' %}bg-yellow-100 text-yellow-500{% else %}bg-emerald-100 text-emerald-500{% endif %}">
+                        {% if student.risk_level == 'critical' %}bg-red-100 text-red-500{% elif student.risk_level == 'warning' %}bg-yellow-100 text-yellow-500{% else %}bg-emerald-100 text-emerald-500{% endif %}">
                         <div class="h-3 w-3 rounded-full 
-                            {% if student.risk_status == 'critical' %}bg-red-500 animate-ping{% elif student.risk_status == 'warning' %}bg-yellow-500{% else %}bg-emerald-500{% endif %}">
+                            {% if student.risk_level == 'critical' %}bg-red-500 animate-ping{% elif student.risk_level == 'warning' %}bg-yellow-500{% else %}bg-emerald-500{% endif %}">
                         </div>
                     </div>
                 </div>
@@ -246,17 +246,35 @@
                 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <table class="w-full text-sm text-left text-gray-600">
                         <thead class="bg-gray-50 text-xs uppercase text-gray-500 font-semibold">
-                            <tr><th class="px-6 py-3">วันที่</th><th class="px-6 py-3">เข้าเรียน</th><th class="px-6 py-3">งาน</th><th class="px-6 py-3">จัดการ</th></tr>
+                            <tr>
+                                <th class="px-4 py-3">วันที่</th>
+                                <th class="px-4 py-3 text-center">เข้าเรียน</th>
+                                <th class="px-4 py-3 text-center">Quiz</th>
+                                <th class="px-4 py-3 text-center">กิจกรรม</th>
+                                <th class="px-4 py-3 text-center">ส่งงาน</th>
+                                <th class="px-4 py-3 text-center">จัดการ</th>
+                            </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             {% for b in behaviors %}
                             <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-3">{{ b.record_date|date:"d M Y" }}</td>
-                                <!-- เปลี่ยนสีตัวเลขการเข้าเรียน -->
-                                <td class="px-6 py-3 font-medium {% if b.attendance_score < 50 %}text-red-600{% else %}text-emerald-600{% endif %}">{{ b.attendance_score }}%</td>
-                                <td class="px-6 py-3">{{ b.homework_done|yesno:"✔,✖" }}</td>
-                                <td class="px-6 py-3 text-center">
-                                    <!-- ฟอร์มสำหรับลบข้อมูลรายการนี้ -->
+                                <td class="px-4 py-3">{{ b.record_date|date:"d M Y" }}</td>
+                                
+                                <td class="px-4 py-3 text-center font-medium {% if b.attendance_score < 5 %}text-red-600{% elif b.attendance_score < 10 %}text-yellow-600{% else %}text-emerald-600{% endif %}">
+                                    {{ b.attendance_score }} / 10
+                                </td>
+                                
+                                <td class="px-4 py-3 text-center font-medium text-indigo-600">
+                                    {{ b.quiz_score }} / 10
+                                </td>
+                                
+                                <td class="px-4 py-3 text-center text-gray-500">
+                                    {{ b.activity_score }} / 10
+                                </td>
+
+                                <td class="px-4 py-3 text-center">{{ b.homework_done|yesno:"✔,✖" }}</td>
+                                
+                                <td class="px-4 py-3 text-center">
                                     <form method="POST" onsubmit="return confirm('ยืนยันที่จะลบรายการนี้?');" class="inline-block">
                                         {% csrf_token %}
                                         <input type="hidden" name="action" value="delete_behavior">
@@ -270,7 +288,7 @@
                                 </td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="4" class="px-6 py-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">ไม่มีข้อมูล</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

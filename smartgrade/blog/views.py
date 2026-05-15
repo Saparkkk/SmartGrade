@@ -334,14 +334,11 @@ def teacher_dashboard(request):
     หน้า Dashboard หลักสำหรับครู: 
     แสดงภาพรวมของนักเรียน คัดกรองนักเรียนที่มีความเสี่ยง และรองรับการค้นหา/กรองตามห้องเรียน
     """
-    # ป้องกันไม่ให้นักเรียนเข้าถึงหน้านี้
     if not request.user.is_staff:
         return redirect('student_dashboard')
 
-    # ดึงข้อมูลนักเรียนทั้งหมดที่เรียนกับครูคนนี้ (อิงจาก teachers=request.user)
     all_students_raw = StudentProfile.objects.filter(teachers=request.user).select_related('user').order_by('class_name')
     
-    # การค้นหาและกรองข้อมูล
     search_query = request.GET.get('q', '') 
     class_filter = request.GET.get('class_filter', '')
     query_for_filter = all_students_raw 
@@ -360,25 +357,33 @@ def teacher_dashboard(request):
     all_classes = all_students_raw.values_list('class_name', flat=True).distinct().order_by('class_name')
     user_profile = get_role_for_user(request.user)
     
-    # วนลูปเพื่อคำนวณสถานะความเสี่ยงของนักเรียนแต่ละคน
     for s in all_students_raw:
-        # ดึงข้อมูลพฤติกรรมล่าสุดของนักเรียน
         latest = s.behaviors.filter(teacher=request.user).order_by('-record_date', '-id').first()
         
-        stat_att = 0
+        stat_att = 0 # อาจจะเก็บไว้แสดงผลแยกต่างหากถ้าต้องการ
         stat_score = 0
         risk_status = "none"
         risk_label = "ไม่มีข้อมูล"
         risk_class = "bg-gray-100 text-gray-400"
 
-        # เกณฑ์การประเมินความเสี่ยงจากคะแนนการเข้าเรียน (Attendance Score)
         if latest:
-            stat_att = latest.attendance_score
-            if stat_att < 50:
+            quiz = getattr(latest, 'quiz_score', 0)
+            att = getattr(latest, 'attendance_score', 0)
+            act = getattr(latest, 'activity_score', 0)
+            
+            # 1. หาค่าเฉลี่ยก่อน (ตอนนี้เต็ม 10)
+            avg_score = (quiz + att + act) / 3
+            
+            # 2. แปลงเป็นฐาน 100 (คูณ 10) แล้วค่อยปัดทศนิยม
+            stat_score = round(avg_score * 10, 2) 
+            stat_att = att * 10 # ถ้าอยากให้การเข้าเรียนแสดงเป็น % ด้วยก็คูณ 10 ได้เลย
+            
+            # ประเมินความเสี่ยงจากคะแนนเฉลี่ย
+            if stat_score < 50:
                 risk_status = "critical"
                 risk_label = "เสี่ยงสูง"
                 risk_class = "bg-red-100 text-red-700"
-            elif stat_att < 70:
+            elif stat_score < 70:
                 risk_status = "warning"
                 risk_label = "เฝ้าระวัง"
                 risk_class = "bg-yellow-100 text-yellow-700"
@@ -387,7 +392,6 @@ def teacher_dashboard(request):
                 risk_label = "ปลอดภัย"
                 risk_class = "bg-green-100 text-green-700"
 
-        # จัดเตรียมข้อมูลสำหรับแสดงผล
         s_data = {
             'info': s,
             'stat_att': stat_att,
@@ -397,15 +401,12 @@ def teacher_dashboard(request):
             'risk_class': risk_class,
         }
         
-        # ถ้านักเรียนมีความเสี่ยงสูง ให้เก็บไว้แสดงในส่วน Widget ร้องเตือน
         if risk_status == 'critical': 
             widget_list.append(s_data)
 
-        # ถ้านักเรียนอยู่ในเงื่อนไขการค้นหา/กรอง ให้เก็บไว้แสดงในตารางรายชื่อ
         if s.id in filtered_ids:
             table_list.append(s_data)
 
-    # กรองข้อมูล Widget ไม่ให้ซ้ำกัน (ใช้ ID เป็น key)
     unique_widget = list({v['info'].id: v for v in widget_list}.values())
 
     return render(request, 'management/teacher_dashboard.html', {
@@ -454,13 +455,21 @@ def teacher_student_list(request):
         s.last_date = "-"
 
         if latest_record:
-            score = latest_record.attendance_score
-            s.debug_score = score
+            # ---------------------------------------------------------
+            # ดึงคะแนน 3 ส่วนมาหาค่าเฉลี่ย (Quiz, Attendance, Activity)
+            # ---------------------------------------------------------
+            q = getattr(latest_record, 'quiz_score', 0)
+            a = getattr(latest_record, 'attendance_score', 0)
+            act = getattr(latest_record, 'activity_score', 0)
+            
+            avg_score = (q + a + act) / 3
+            s.debug_score = round(avg_score * 10, 2) # เก็บเป็นค่าเฉลี่ย (ปัดทศนิยม 2 ตำแหน่ง)
             s.last_date = latest_record.record_date
             
-            if score < 50:
+            # ประเมินเกณฑ์ให้ตรงกับหน้า Dashboard (<50 แดง, <70 เหลือง, นอกนั้นเขียว)
+            if s.debug_score < 50:
                 s.custom_status = "critical" 
-            elif score < 60:
+            elif s.debug_score < 70:
                 s.custom_status = "warning" 
             else:
                 s.custom_status = "normal" 
@@ -483,44 +492,63 @@ def teacher_student_list(request):
 def teacher_student_detail(request, student_id):
     """
     หน้ารายละเอียดของนักเรียนรายบุคคล (มุมมองครู):
-    ใช้ดูประวัติ และเพิ่ม/ลบ ข้อมูลต่างๆ เช่น พฤติกรรม, Feedback, โน้ตส่วนตัว, การติดต่อ
+    - คำนวณสถานะความเสี่ยงแบบ Real-time (Average Quiz + Att + Act * 10)
+    - แสดงประวัติพฤติกรรม, Feedback, โน้ตส่วนตัว และการติดต่อ
+    - รองรับการเพิ่มข้อมูลผ่านฟอร์มต่างๆ
     """
     student = get_object_or_404(StudentProfile, id=student_id)
 
-    # ดึงข้อมูลประวัติต่างๆ ที่เกี่ยวข้องกับครูคนนี้และนักเรียนคนนี้
-    behaviors = student.behaviors.filter(teacher=request.user).order_by('-record_date')
+    # 1. ดึงข้อมูลประวัติต่างๆ ที่เกี่ยวข้อง
+    behaviors = student.behaviors.filter(teacher=request.user).order_by('-record_date', '-id')
+    latest_record = behaviors.first()
+    
+    # ---------------------------------------------------------
+    # [LOGIC] คำนวณสถานะความเสี่ยงให้สอดคล้องกับ Dashboard (ฐาน 100)
+    # ---------------------------------------------------------
+    student.risk_level = "none" # ค่าเริ่มต้นกรณีไม่มีข้อมูล
+    if latest_record:
+        q = getattr(latest_record, 'quiz_score', 0)
+        a = getattr(latest_record, 'attendance_score', 0)
+        act = getattr(latest_record, 'activity_score', 0)
+        
+        # หาร 3 คูณ 10 เพื่อให้เป็นฐาน 100
+        total_percent = ((q + a + act) / 3) * 10 
+        
+        if total_percent < 50:
+            student.risk_level = "critical"
+        elif total_percent < 70:
+            student.risk_level = "warning"
+        else:
+            student.risk_level = "normal"
+    # ---------------------------------------------------------
+
+    # ดึงข้อมูลส่วนอื่นๆ
     records = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('-record_date')
     feedbacks = student.feedbacks.filter(teacher=request.user).order_by('-created_at')
     notes = PrivateNote.objects.filter(student=student, teacher=request.user).order_by('-created_at')
     contacts = student.contact_logs.filter(teacher=request.user).order_by('-created_at')
 
-    # เตรียมฟอร์มเปล่าสำหรับการเพิ่มข้อมูล
+    # เตรียมฟอร์มเปล่า
     behavior_form = BehaviorForm()
     feedback_form = FeedbackForm()
     note_form = PrivateNoteForm()
     contact_form = ContactForm()
 
-    # Mapping รหัสหมวดหมู่วิชา ให้เป็นชื่อวิชาภาษาไทย
+    # Mapping รายวิชาภาษาไทย
     dept_map = {
-        'math': 'คณิตศาสตร์', 
-        'sci': 'วิทยาศาสตร์', 
-        'eng': 'ภาษาต่างประเทศ',
-        'thai': 'ภาษาไทย', 
-        'soc': 'สังคมศึกษา', 
-        'art': 'ศิลปะ',
-        'pe': 'สุขศึกษาและพลศึกษา', 
-        'work': 'การงานอาชีพ',
-        'comp': 'คอมพิวเตอร์',
-        'guidance': 'แนะแนว',
+        'math': 'คณิตศาสตร์', 'sci': 'วิทยาศาสตร์', 'eng': 'ภาษาต่างประเทศ',
+        'thai': 'ภาษาไทย', 'soc': 'สังคมศึกษา', 'art': 'ศิลปะ',
+        'pe': 'สุขศึกษาและพลศึกษา', 'work': 'การงานอาชีพ',
+        'comp': 'คอมพิวเตอร์', 'guidance': 'แนะแนว',
     }
 
     user_profile = get_role_for_user(request.user)
     
-    # จัดการเมื่อมีการส่งฟอร์มข้อมูลเข้ามา (POST Requests)
+    # 2. จัดการการส่งฟอร์ม (POST Requests)
     if request.method == "POST":
-        action = request.POST.get('action') # เช็คว่าส่งฟอร์มประเภทไหนมา
+        action = request.POST.get('action')
 
-        # 1. การเพิ่มข้อมูลพฤติกรรม (คะแนน/การเข้าเรียน)
+        # เพิ่มบันทึกพฤติกรรม/คะแนน
         if action == 'add_behavior':
             form = BehaviorForm(request.POST)
             if form.is_valid():
@@ -528,50 +556,36 @@ def teacher_student_detail(request, student_id):
                 obj.student = student
                 obj.teacher = request.user 
                 
-                # กำหนดรายวิชาอัตโนมัติอิงจากแผนก (Department) ของครู
-                user_profile = get_role_for_user(request.user) 
+                # กำหนดวิชาอัตโนมัติตามกลุ่มสาระของครู
                 if user_profile and user_profile.department:
                     dept_code = user_profile.department
                     obj.subject = dept_map.get(dept_code, dept_code)
                 else:
                     obj.subject = f"วิชาทั่วไป ({request.user.first_name})"
-
-                obj.save()
-                messages.success(request, f"บันทึกคะแนนวิชา {obj.subject} เรียบร้อย")
                 
-        # 2. การลบข้อมูลพฤติกรรม
+                obj.save()
+                messages.success(request, f"บันทึกข้อมูลสำเร็จ")
+
+        # ลบบันทึกพฤติกรรม
         elif action == 'delete_behavior':
             record_id = request.POST.get('record_id')
-            try:
-                # ตรวจสอบให้แน่ใจว่าเป็นของครูคนนี้และนักเรียนคนนี้จริงๆ ก่อนลบ
-                record_to_delete = BehaviorRecord.objects.get(id=record_id, student=student, teacher=request.user)
+            record_to_delete = BehaviorRecord.objects.filter(id=record_id, student=student, teacher=request.user).first()
+            if record_to_delete:
                 record_to_delete.delete()
                 messages.success(request, "ลบรายการเรียบร้อยแล้ว")
-            except BehaviorRecord.DoesNotExist:
-                messages.error(request, "ไม่สามารถลบรายการนี้ได้")
-            
-            return redirect('teacher_student_detail', student_id=student.id)
-        
-        # 3. การส่งข้อเสนอแนะ (Feedback)
+
+        # เพิ่ม Feedback
         elif action == 'add_feedback':
             form = FeedbackForm(request.POST)
             if form.is_valid():
                 obj = form.save(commit=False)
                 obj.student = student
                 obj.teacher = request.user
-
-                # กำหนดวิชาให้ Feedback อัตโนมัติอิงจากแผนกของครู
-                user_profile = get_role_for_user(request.user)
-                if user_profile and user_profile.department:
-                    dept_code = user_profile.department
-                    obj.subject = dept_map.get(dept_code, "General")
-                else:
-                    obj.subject = "General"
-                
+                obj.subject = dept_map.get(user_profile.department, "General") if user_profile else "General"
                 obj.save()
-                messages.success(request, "ส่ง Feedback เรียบร้อยแล้ว")
+                messages.success(request, "ส่งข้อเสนอแนะเรียบร้อย")
 
-        # 4. การบันทึกโน้ตส่วนตัว (Private Note)
+        # เพิ่มโน้ตส่วนตัว
         elif action == 'add_note':
             form = PrivateNoteForm(request.POST)
             if form.is_valid():
@@ -579,9 +593,9 @@ def teacher_student_detail(request, student_id):
                 obj.student = student
                 obj.teacher = request.user
                 obj.save()
-                messages.success(request, "บันทึกโน้ตส่วนตัวแล้ว")
+                messages.success(request, "บันทึกโน้ตแล้ว")
 
-        # 5. การบันทึกประวัติการติดต่อผู้ปกครอง (Contact Log)
+        # เพิ่มบันทึกการติดต่อ
         elif action == 'add_contact':
             form = ContactForm(request.POST)
             if form.is_valid():
@@ -589,9 +603,8 @@ def teacher_student_detail(request, student_id):
                 obj.student = student
                 obj.teacher = request.user
                 obj.save()
-                messages.success(request, "บันทึกการติดต่อด่วนแล้ว")
-        
-        # ป้องกันการ Submit ซ้ำ (PRG Pattern)
+                messages.success(request, "บันทึกการติดต่อแล้ว")
+
         return redirect('teacher_student_detail', student_id=student.id)
 
     return render(request, 'management/teacher_student_detail.html', {
@@ -859,16 +872,22 @@ def student_report(request, student_id):
     ai_message = "ไม่พบข้อมูลคะแนนล่าสุดสำหรับการวิเคราะห์"
 
     if latest_rec:
-        score = latest_rec.attendance_score
-        if score < 50:
+        # เปลี่ยนมาใช้คะแนนเฉลี่ย 3 ส่วนแทน
+        q = getattr(latest_rec, 'quiz_score', 0)
+        a = getattr(latest_rec, 'attendance_score', 0)
+        act = getattr(latest_rec, 'activity_score', 0)
+        score = round((q + a + act) / 3, 2)
+        
+        if score < 50: # เปลี่ยนเกณฑ์ให้ตรงกัน
             ai_status = "critical"
-            ai_message = f"นักเรียนมีพฤติกรรมเสี่ยงสูง (คะแนนล่าสุด {score}%) พบว่ามีการขาดเรียนหรือขาดส่งงานในระดับวิกฤต ครูควรติดต่อผู้ปกครองทันที"
-        elif score < 80:
+            ai_message = f"นักเรียนมีพฤติกรรมเสี่ยงสูง (คะแนนประเมินเฉลี่ย {score}/10) พบว่ามีการขาดเรียนหรือคะแนนต่ำในระดับวิกฤต ควรติดต่อผู้ปกครอง"
+        elif score < 70:
+            # ... (แก้ข้อความให้เข้ากับคะแนนเต็ม 10)
             ai_status = "warning"
-            ai_message = f"นักเรียนอยู่ในกลุ่มเฝ้าระวัง (คะแนนล่าสุด {score}%) เริ่มมีแนวโน้มพฤติกรรมถดถอย ควรสอบถามปัญหาเบื้องต้นหรือตักเตือน"
+            ai_message = f"นักเรียนอยู่ในกลุ่มเฝ้าระวัง (คะแนนประเมินเฉลี่ย {score}/10) เริ่มมีแนวโน้มพฤติกรรมถดถอย ควรสอบถามปัญหาเบื้องต้นหรือตักเตือน"
         else:
             ai_status = "normal"
-            ai_message = f"นักเรียนมีพฤติกรรมปกติ (คะแนนล่าสุด {score}%) รักษามาตรฐานการเข้าเรียนและส่งงานได้ดีเยี่ยม"
+            ai_message = f"นักเรียนมีพฤติกรรมปกติ (คะแนนประเมินเฉลี่ย {score}/10) รักษามาตรฐานการเข้าเรียนและส่งงานได้ดีเยี่ยม"
 
     # เตรียมข้อมูลสำหรับสร้างกราฟเส้น (Trend Chart) รายวัน
     history_records = BehaviorRecord.objects.filter(student=student, teacher=request.user).order_by('record_date')
@@ -921,14 +940,16 @@ def student_report(request, student_id):
 def student_subject_detail(request, subject_name):
     """
     หน้าแสดงรายละเอียดและสถิติของนักเรียนเจาะจงตามรายวิชา:
-    รวมถึงการคำนวณอัตราการเข้าเรียน, คะแนนเฉลี่ย, และการจัดเตรียมข้อมูลสำหรับกราฟ
+    ปรับปรุง: รวมคะแนนเฉลี่ย (Quiz, เข้าร่วม, กิจกรรม) และเตรียมข้อมูลกราฟ
     """
     # ป้องกันครูเข้าถึงหน้านี้
     if request.user.is_staff:
         return redirect('teacher_dashboard')
 
     try:
+        # ดึงข้อมูลโปรไฟล์ของนักเรียนที่ล็อกอิน
         student = StudentProfile.objects.get(user=request.user)
+        # ดึงประวัติพฤติกรรมทั้งหมดของนักเรียนคนนี้
         all_records = BehaviorRecord.objects.filter(student=student).select_related('teacher', 'teacher__profile').order_by('-record_date')
         
         filtered_records = []
@@ -964,75 +985,61 @@ def student_subject_detail(request, subject_name):
                 return db_sub
             return 'วิชาทั่วไป'
 
-        # กรองข้อมูลเอาเฉพาะประวัติที่ตรงกับชื่อวิชา (subject_name) ที่ร้องขอ
+        # กรองข้อมูลเอาเฉพาะประวัติที่ตรงกับชื่อวิชา (subject_name) ที่คลิกเข้ามา
         for record in all_records:
             if get_subj(record) == subject_name:
                 filtered_records.append(record)
-                # ดึงชื่อครูผู้สอนวิชานี้ (อิงจาก record แรกที่เจอ)
                 if not subject_teacher and record.teacher:
                     subject_teacher = record.teacher
 
         count = len(filtered_records)
         avg_score = 0
         attendance_rate = 0
-
-        present_count = 0
-        late_count = 0
-        absent_count = 0
-
-        labels = []
-        scores = []
-        att_scores = []
+        present_count = late_count = absent_count = 0
+        labels, scores, att_scores, total_avg_scores = [], [], [], []
 
         if count > 0:
-            # คำนวณคะแนนควิซเฉลี่ย
-            total_quiz = sum(r.quiz_score for r in filtered_records)
-            avg_score = total_quiz / count
+            total_avg_sum = 0
+            total_att_earned = 0
+            
+            # คำนวณคะแนนรวมและสถานะการเข้าเรียน
+            for r in filtered_records:
+                # ดึงคะแนน 3 ส่วน (ถ้าไม่มีให้เป็น 0)
+                q = getattr(r, 'quiz_score', 0)
+                a = getattr(r, 'attendance_score', 0)
+                act = getattr(r, 'activity_score', 0)
+                
+                # หาค่าเฉลี่ยของ record นี้
+                record_avg = (q + a + act) / 3
+                total_avg_sum += record_avg
+                total_att_earned += a
+                
+                # นับสถิติ มาเรียน, มาสาย, ขาดเรียน (อิงจากคะแนน attendance)
+                if a >= 80: present_count += 1
+                elif a > 0: late_count += 1
+                else: absent_count += 1
 
-            # คำนวณอัตราการเข้าเรียน โดยหาฐานคะแนนสูงสุดที่ครูตั้งไว้
-            total_att = sum(r.attendance_score for r in filtered_records)
-            max_val = max((r.attendance_score for r in filtered_records), default=0)
-            
-            if max_val > 10:
-                score_base = max_val 
-            elif max_val > 2:
-                score_base = 10      
-            else:
-                score_base = 2       
-            
+            # 1. คะแนนเฉลี่ยรวมของวิชานี้ (ทุกครั้งที่บันทึก)
+            avg_score = round(total_avg_sum / count, 2)
+
+            # 2. อัตราการเข้าเรียน (เป็น %)
+            max_val = max((getattr(r, 'attendance_score', 0) for r in filtered_records), default=0)
+            score_base = max_val if max_val > 0 else 100 # ป้องกันการหารด้วย 0
             max_possible = count * score_base
-            attendance_rate = (total_att / max_possible) * 100 if max_possible > 0 else 0
+            attendance_rate = round((total_att_earned / max_possible) * 100, 2) if max_possible > 0 else 0
             attendance_rate = min(100, attendance_rate) # กันค่าเกิน 100%
 
-            # นับสถิติ มาเรียน, มาสาย, ขาดเรียน
-            for r in filtered_records:
-                score = r.attendance_score
-                # สมมติฐาน: คะแนนเต็มคือ 100
-                if score >= 80:
-                    present_count += 1
-                elif score > 0:
-                    late_count += 1
-                else:
-                    absent_count += 1
-
-            # เตรียมข้อมูลสำหรับวาดกราฟ (ย้อนหลัง 10 ครั้งล่าสุด นำมากลับลำดับเป็นเก่าไปใหม่)
+            # 3. เตรียมข้อมูลสำหรับวาดกราฟ (ย้อนหลัง 10 ครั้งล่าสุด นำมากลับลำดับเป็นเก่าไปใหม่)
             graph_data = filtered_records[:10][::-1]
             labels = [r.record_date.strftime('%d/%m') if r.record_date else '-' for r in graph_data]
-            scores = [r.quiz_score for r in graph_data]
-            att_scores = [r.attendance_score for r in graph_data]
+            scores = [getattr(r, 'quiz_score', 0) for r in graph_data]
+            att_scores = [getattr(r, 'attendance_score', 0) for r in graph_data]
+            total_avg_scores = [round((getattr(r, 'quiz_score', 0) + getattr(r, 'attendance_score', 0) + getattr(r, 'activity_score', 0))/3, 2) for r in graph_data]
 
     except StudentProfile.DoesNotExist:
-        # กรณีไม่พบข้อมูลนักเรียน
         student = None
-        filtered_records = []
-        subject_teacher = None
-        count = 0
-        avg_score = 0
-        attendance_rate = 0
-        present_count = 0
-        late_count = 0
-        absent_count = 0
-        labels, scores, att_scores = [], [], []
+        # กำหนดค่าเริ่มต้นกรณีไม่พบข้อมูล
+        # (เว้นไว้ตามเดิมในโค้ดของคุณ)
 
     return render(request, 'management/student_subject_detail.html', {
         'subject_name': subject_name,
@@ -1046,6 +1053,7 @@ def student_subject_detail(request, subject_name):
         'labels': labels,
         'scores': scores,
         'att_scores': att_scores,
+        'total_avg_scores': total_avg_scores, # ส่งข้อมูลกราฟเส้นค่าเฉลี่ยรวมไปด้วย
     })
 
 # ==========================================

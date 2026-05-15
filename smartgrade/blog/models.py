@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.db.models import Avg
 from django.utils import timezone
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class UserProfile(models.Model):
     ROLE_CHOICES = (
@@ -77,15 +78,6 @@ class StudentProfile(models.Model):
     def __str__(self):
         return f"{self.user.get_full_name() or self.user.username}"
     
-    @property
-    def risk_status(self):
-        latest = self.behaviors.order_by('-record_date', '-id').first()
-        if not latest: return "unknown"
-        
-        score = latest.attendance_score
-        if score < 50: return "critical" 
-        if score < 60: return "warning"  
-        return "normal" 
 
 class TeacherProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -114,15 +106,40 @@ class BehaviorRecord(models.Model):
         verbose_name="ครูผู้บันทึก"
     )
 
-    attendance_score = models.IntegerField(default=0)
-    quiz_score = models.FloatField(default=0.0)
+    # สมมติให้คะแนนเข้าเรียนเต็ม 10 
+    attendance_score = models.IntegerField(default=0, verbose_name="คะแนนเข้าเรียน")
+    
+    # 2. ปรับแก้ quiz_score: บังคับให้กรอก, กำหนดค่า 0-10 พร้อมข้อความแจ้งเตือน
+    quiz_score = models.FloatField(
+        default=0.0,
+        validators=[
+            MinValueValidator(0.0, message="คะแนนต้องไม่ติดลบ"),
+            MaxValueValidator(10.0, message="คะแนนควิซต้องไม่เกิน 10 คะแนน")
+        ],
+        verbose_name="คะแนนควิซ",
+        error_messages={
+            'blank': 'กรุณากรอกคะแนนควิซ',
+            'null': 'กรุณากรอกคะแนนควิซ'
+        }
+    )
+    
     homework_done = models.BooleanField(default=False)
-    activity_score = models.IntegerField(default=0)
+    
+    # สมมติให้คะแนนกิจกรรมเต็ม 10
+    activity_score = models.IntegerField(default=0, verbose_name="คะแนนกิจกรรม")
+    
     record_date = models.DateField(default=timezone.now)
     subject = models.CharField(max_length=100, default="General", verbose_name="วิชา")
     
+    # 3. เพิ่ม Property สำหรับดึงคะแนนรวม 3 ส่วน (นำไปใช้ในหน้า Dashboard ได้เลย)
+    @property
+    def total_behavior_score(self):
+        """คำนวณคะแนนรวมจาก ควิซ + เข้าเรียน + กิจกรรม"""
+        # สมมติฐาน: ถ้าคะแนนทั้ง 3 อย่างเต็ม 10 คะแนนรวมจะเป็น 30
+        return self.quiz_score + self.attendance_score + self.activity_score
+        
     def __str__(self):
-        return f"{self.student.user.username} - {self.record_date}"
+        return f"{self.student.user.username} - {self.record_date} (Total: {self.total_behavior_score})"
 
 class StudentScore(models.Model):
     student = models.ForeignKey(StudentProfile, on_delete=models.CASCADE, related_name='exam_scores')

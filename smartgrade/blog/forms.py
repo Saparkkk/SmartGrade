@@ -120,10 +120,11 @@ def get_tailwind_widgets():
     }
 
 class BehaviorForm(forms.ModelForm):
+    # 1. ปรับสเกลคะแนนการเข้าเรียนให้เต็ม 10 เพื่อให้เท่ากับคะแนนส่วนอื่น
     ATTENDANCE_CHOICES = [
-        (100, '🟢 มาเรียน (ปกติ)'),
-        (50,  '🟡 มาสาย'),
-        (0,   '🔴 ขาดเรียน'),
+        (10, '🟢 มาเรียน (ปกติ)'),  # แก้จาก 100 เป็น 10
+        (5,  '🟡 มาสาย'),        # แก้จาก 50 เป็น 5
+        (0,  '🔴 ขาดเรียน'),
     ]
 
     attendance_score = forms.TypedChoiceField(
@@ -157,8 +158,14 @@ class BehaviorForm(forms.ModelForm):
         fields = ['record_date', 'attendance_score', 'homework_done', 'quiz_score', 'activity_score']
         widgets = {
             'record_date': forms.DateInput(attrs={'type': 'date', 'class': 'border rounded px-3 py-2 w-full'}),
-            'quiz_score': forms.NumberInput(attrs={'class': 'border rounded px-3 py-2 w-full'}),
-            'activity_score': forms.NumberInput(attrs={'class': 'border rounded px-3 py-2 w-full'}),
+            # 2. เพิ่มข้อจำกัด min/max ให้กรอกได้แค่ 0-10
+            'quiz_score': forms.NumberInput(attrs={
+                'class': 'border rounded px-3 py-2 w-full',
+                'min': '0', 
+                'max': '10',
+                'placeholder': 'ระบุคะแนน 0-10'
+            }),
+            # 3. ลบ activity_score ออกจากตรงนี้ เพราะถูกประกาศเป็น Dropdown ด้านบนไปแล้ว
         }
 
 class FeedbackForm(forms.ModelForm):
