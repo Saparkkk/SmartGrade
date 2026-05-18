@@ -1186,7 +1186,6 @@ def student_import_csv_view(request):
                 s, created_profile = StudentProfile.objects.update_or_create(
                     user=user_obj,
                     defaults={
-                        'student_id': row.get("student_id", "").strip(),
                         'class_name': row.get("class_name", "ไม่ระบุ").strip()
                     }
                 )
@@ -1241,7 +1240,7 @@ def risk_students():
     for r in records:
         # หมายเหตุ: homework_score และ participation_score ในสมการนี้ 
         # อาจจะต้องเช็คในโมเดลว่ามีฟิลด์นี้หรือไม่ เพราะด้านบนใช้ homework_done เป็น boolean
-        avg = (r.attendance_score + r.homework_score + r.quiz_score + r.participation_score) / 4
+        avg = (r.attendance_score + r.homework_done + r.quiz_score + r.activity_score) / 4
         if avg < 60:
             risky.append(r.student)
 
