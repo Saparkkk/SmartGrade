@@ -368,15 +368,15 @@ def teacher_dashboard(request):
 
         if latest:
             quiz = getattr(latest, 'quiz_score', 0)
-            att = getattr(latest, 'attendance_score', 0)
-            act = getattr(latest, 'activity_score', 0)
+            attendance = getattr(latest, 'attendance_score', 0)
+            activity = getattr(latest, 'activity_score', 0)
             
             # 1. หาค่าเฉลี่ยก่อน (ตอนนี้เต็ม 10)
-            avg_score = (quiz + att + act) / 3
+            avg_score = (quiz + attendance + activity) / 3
             
             # 2. แปลงเป็นฐาน 100 (คูณ 10) แล้วค่อยปัดทศนิยม
             stat_score = round(avg_score * 10, 2) 
-            stat_att = att * 10 # ถ้าอยากให้การเข้าเรียนแสดงเป็น % ด้วยก็คูณ 10 ได้เลย
+            stat_att = attendance * 10 # ถ้าอยากให้การเข้าเรียนแสดงเป็น % ด้วยก็คูณ 10 ได้เลย
             
             # ประเมินความเสี่ยงจากคะแนนเฉลี่ย
             if stat_score < 50:
@@ -458,11 +458,11 @@ def teacher_student_list(request):
             # ---------------------------------------------------------
             # ดึงคะแนน 3 ส่วนมาหาค่าเฉลี่ย (Quiz, Attendance, Activity)
             # ---------------------------------------------------------
-            q = getattr(latest_record, 'quiz_score', 0)
-            a = getattr(latest_record, 'attendance_score', 0)
-            act = getattr(latest_record, 'activity_score', 0)
-            
-            avg_score = (q + a + act) / 3
+            quiz = getattr(latest_record, 'quiz_score', 0)
+            attendance = getattr(latest_record, 'attendance_score', 0)
+            activity = getattr(latest_record, 'activity_score', 0)
+
+            avg_score = (quiz + attendance + activity) / 3
             s.debug_score = round(avg_score * 10, 2) # เก็บเป็นค่าเฉลี่ย (ปัดทศนิยม 2 ตำแหน่ง)
             s.last_date = latest_record.record_date
             
@@ -507,13 +507,13 @@ def teacher_student_detail(request, student_id):
     # ---------------------------------------------------------
     student.risk_level = "none" # ค่าเริ่มต้นกรณีไม่มีข้อมูล
     if latest_record:
-        q = getattr(latest_record, 'quiz_score', 0)
-        a = getattr(latest_record, 'attendance_score', 0)
-        act = getattr(latest_record, 'activity_score', 0)
-        
+        quiz = getattr(latest_record, 'quiz_score', 0)
+        attendance = getattr(latest_record, 'attendance_score', 0)
+        activity = getattr(latest_record, 'activity_score', 0)
+
         # หาร 3 คูณ 10 เพื่อให้เป็นฐาน 100
-        total_percent = ((q + a + act) / 3) * 10 
-        
+        total_percent = ((quiz + attendance + activity) / 3) * 10
+
         if total_percent < 50:
             student.risk_level = "critical"
         elif total_percent < 70:
@@ -873,10 +873,10 @@ def student_report(request, student_id):
 
     if latest_rec:
         # เปลี่ยนมาใช้คะแนนเฉลี่ย 3 ส่วนแทน
-        q = getattr(latest_rec, 'quiz_score', 0)
-        a = getattr(latest_rec, 'attendance_score', 0)
-        act = getattr(latest_rec, 'activity_score', 0)
-        score = round((q + a + act) / 3, 2)
+        quiz = getattr(latest_rec, 'quiz_score', 0)
+        attendance = getattr(latest_rec, 'attendance_score', 0)
+        activity = getattr(latest_rec, 'activity_score', 0)
+        score = round((quiz + attendance + activity) / 3, 2)
         
         if score < 50: # เปลี่ยนเกณฑ์ให้ตรงกัน
             ai_status = "critical"
@@ -1005,18 +1005,18 @@ def student_subject_detail(request, subject_name):
             # คำนวณคะแนนรวมและสถานะการเข้าเรียน
             for r in filtered_records:
                 # ดึงคะแนน 3 ส่วน (ถ้าไม่มีให้เป็น 0)
-                q = getattr(r, 'quiz_score', 0)
-                a = getattr(r, 'attendance_score', 0)
-                act = getattr(r, 'activity_score', 0)
-                
+                quiz = getattr(r, 'quiz_score', 0)
+                attendance = getattr(r, 'attendance_score', 0)
+                activity = getattr(r, 'activity_score', 0)
+
                 # หาค่าเฉลี่ยของ record นี้
-                record_avg = (q + a + act) / 3
+                record_avg = (quiz + attendance + activity) / 3
                 total_avg_sum += record_avg
-                total_att_earned += a
-                
+                total_att_earned += attendance
+
                 # นับสถิติ มาเรียน, มาสาย, ขาดเรียน (อิงจากคะแนน attendance)
-                if a >= 80: present_count += 1
-                elif a > 0: late_count += 1
+                if attendance >= 80: present_count += 1
+                elif attendance > 0: late_count += 1
                 else: absent_count += 1
 
             # 1. คะแนนเฉลี่ยรวมของวิชานี้ (ทุกครั้งที่บันทึก)
